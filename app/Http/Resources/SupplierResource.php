@@ -27,6 +27,16 @@ class SupplierResource extends JsonResource
                     'original_name' => $d->original_name,
                 ])
             ),
+            'vehicles'     => $this->whenLoaded('vehicles', fn() =>
+                $this->vehicles->map(fn($v) => [
+                    'id'            => $v->id,
+                    'tractor_brand' => $v->tractor_brand,
+                    'tractor_plate' => $v->tractor_plate,
+                    'trailer_brand' => $v->trailer_brand,
+                    'trailer_plate' => $v->trailer_plate,
+                    'status'        => $v->status,
+                ])
+            ),
         ];
     }
 }

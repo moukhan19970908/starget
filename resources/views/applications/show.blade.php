@@ -180,32 +180,36 @@ async function loadApp() {
 
     document.getElementById('dClient').innerHTML   = a.client ? `<strong>${a.client.company_name || a.client.name}</strong>` : '—';
     document.getElementById('dContract').textContent = a.contract?.number || '—';
-    document.getElementById('dRoute').textContent  = [a.from_city?.name, a.to_city?.name].filter(Boolean).join(' → ') || '—';
-    document.getElementById('dLoadDate').textContent   = Starget.fmt.date(a.loading_date) || '—';
-    document.getElementById('dUnloadDate').textContent = Starget.fmt.date(a.unloading_date) || '—';
-    document.getElementById('dShipper').textContent  = a.shipper_name   || '—';
-    document.getElementById('dConsignee').textContent = a.consignee_name || '—';
-    document.getElementById('dManager').textContent  = a.manager?.name  || '—';
+    document.getElementById('dRoute').textContent  = [a.departure_city, a.destination_city].filter(Boolean).join(' → ') || '—';
+    document.getElementById('dLoadDate').textContent   = Starget.fmt.date(a.departure_date) || '—';
+    document.getElementById('dUnloadDate').textContent = Starget.fmt.date(a.arrival_date) || '—';
+    document.getElementById('dShipper').textContent  = a.shipper   || '—';
+    document.getElementById('dConsignee').textContent = a.consignee || '—';
+    document.getElementById('dManager').textContent  = a.author ? (a.author.name + (a.author.surname ? ' ' + a.author.surname : '')) : '—';
 
-    if (a.notes) {
+    if (a.comment) {
         const n = document.getElementById('dNotes');
         n.style.display = 'block';
-        n.textContent = a.notes;
+        n.textContent = a.comment;
     }
 
     document.getElementById('dCargoName').textContent = a.cargo_name    || '—';
-    document.getElementById('dLoadType').textContent  = a.loading_type?.name || '—';
-    document.getElementById('dWeight').textContent    = a.cargo_weight   ? `${a.cargo_weight} кг` : '—';
-    document.getElementById('dVolume').textContent    = a.cargo_volume   ? `${a.cargo_volume} м³` : '—';
-    document.getElementById('dCargoValue').textContent = a.cargo_value   ? Starget.fmt.money(a.cargo_value, a.currency) : '—';
+    document.getElementById('dLoadType').textContent  = a.loading_type  || '—';
+    document.getElementById('dWeight').textContent    = a.weight  ? `${a.weight} кг` : '—';
+    document.getElementById('dVolume').textContent    = a.volume  ? `${a.volume} м³` : '—';
+    document.getElementById('dCargoValue').textContent = a.cargo_cost ? Starget.fmt.money(a.cargo_cost, a.cargo_currency) : '—';
     document.getElementById('dSpecial').textContent  = a.special_conditions || '—';
 
     // Finance
-    document.getElementById('fRate').textContent     = Starget.fmt.money(a.client_rate, a.currency);
-    document.getElementById('fCurrency').textContent = a.currency || '—';
-    document.getElementById('fExchange').textContent = a.exchange_rate ? `1 USD = ${a.exchange_rate} KZT` : '1';
-    document.getElementById('fVat').textContent      = a.vat_enabled ? '12%' : 'Без НДС';
-    document.getElementById('fTotal').textContent    = Starget.fmt.money(a.total_cost, 'KZT');
+    const rateKzt = a.client_rate_currency === 'KZT' || !a.client_rate_exchange
+        ? a.client_rate
+        : (a.client_rate * a.client_rate_exchange);
+    const vatAmt  = a.client_rate_vat ? rateKzt * 0.12 : 0;
+    document.getElementById('fRate').textContent     = Starget.fmt.money(a.client_rate, a.client_rate_currency || 'KZT');
+    document.getElementById('fCurrency').textContent = a.client_rate_currency || '—';
+    document.getElementById('fExchange').textContent = a.client_rate_exchange ? `1 ${a.client_rate_currency || 'USD'} = ${a.client_rate_exchange} KZT` : '1';
+    document.getElementById('fVat').textContent      = a.client_rate_vat ? '12%' : 'Без НДС';
+    document.getElementById('fTotal').textContent    = Starget.fmt.money(rateKzt + vatAmt, 'KZT');
 
     // Status
     document.getElementById('dStatus').innerHTML = Starget.fmt.status(a.status);
@@ -225,7 +229,7 @@ async function loadApp() {
         document.getElementById('stopsTimeline').innerHTML = `<div class="route-timeline">` +
             a.stops.map((s, i) => `<div class="timeline-stop">
                 <div class="timeline-dot ${i === 0 ? 'green' : i === a.stops.length - 1 ? 'red' : 'blue'}"></div>
-                <div><div class="timeline-label">${s.type_label || s.type}</div><div class="timeline-addr">${s.address}</div></div>
+                <div><div class="timeline-label">${s.stop_type || '—'}</div><div class="timeline-addr">${s.address}</div></div>
             </div>`).join('<div class="timeline-line"></div>') +
         `</div>`;
     }

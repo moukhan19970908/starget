@@ -188,9 +188,9 @@ function collectDocs() {
         docs.push({
             document_type_id: t.value,
             number:           n.value,
-            issue_date:       document.getElementById(`dissue_${i}`)?.value || null,
-            expiry_date:      document.getElementById(`dexpiry_${i}`)?.value || null,
-            issuer:           document.getElementById(`dissuer_${i}`)?.value || null,
+            issued_date:      document.getElementById(`dissue_${i}`)?.value || null,
+            expires_at:       document.getElementById(`dexpiry_${i}`)?.value || null,
+            issued_by:        document.getElementById(`dissuer_${i}`)?.value || null,
         });
     }
     return docs;
@@ -206,7 +206,7 @@ async function saveDriver() {
         iin:             document.getElementById('iin').value,
         type:            document.getElementById('personType').value,
         phone:           document.getElementById('phone').value,
-        license_classes: getLicenses(),
+        license_classes: getLicenses().join(','),
         is_driver:       document.getElementById('isDriver').checked,
         is_owner:        document.getElementById('isOwner').checked,
         documents:       collectDocs(),

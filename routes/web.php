@@ -20,4 +20,5 @@ Route::get('/vehicles',               fn() => view('vehicles.index'));
 Route::get('/vehicles/create',        fn() => view('vehicles.create'));
 Route::get('/drivers',                fn() => view('drivers.index'));
 Route::get('/drivers/create',         fn() => view('drivers.create'));
+Route::get('/drivers/{id}',           fn() => view('drivers.show'));
 

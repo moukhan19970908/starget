@@ -278,8 +278,9 @@ const Starget = {
   fillSelect(id, items, valField = 'id', labelField = 'name', placeholder = 'Выберите...') {
     const el = document.getElementById(id);
     if (!el) return;
+    const getLabel = typeof labelField === 'function' ? labelField : (i) => i[labelField];
     el.innerHTML = `<option value="">${placeholder}</option>` +
-      items.map(i => `<option value="${i[valField]}">${i[labelField]}</option>`).join('');
+      items.map(i => `<option value="${i[valField]}">${getLabel(i)}</option>`).join('');
   },
 
   /* --------------------------------------------------------

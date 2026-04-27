@@ -129,9 +129,9 @@ async function loadSuppliers(page) {
                 <div style="font-weight:500">${s.company_name || s.name || '—'}</div>
                 <div style="font-size:11px;color:var(--text-muted)">${s.specialization || ''}</div>
             </td>
-            <td class="text-mono">${s.bin || s.iin || '—'}</td>
+            <td class="text-mono">${s.bin_iin || '—'}</td>
             <td>
-                <div>${s.contact_person || '—'}</div>
+                <div>${s.contact_name || '—'}</div>
                 <div style="font-size:11px;color:var(--text-muted)">${s.phone || ''}</div>
             </td>
             <td><span style="font-weight:600">${s.transportations_count || 0}</span></td>
@@ -143,9 +143,83 @@ async function loadSuppliers(page) {
     if (res.meta) Starget.renderPagination(res.meta, 'suppliersPagination', loadSuppliers);
 }
 
-function viewSupplier(id) {
-    Starget.toast('Просмотр поставщика — в разработке', 'info');
+// ── SUPPLIER DETAIL PANEL ────────────────────────────────────
+async function viewSupplier(id) {
+    const panel = document.getElementById('supplierPanel');
+    const body  = document.getElementById('supplierPanelBody');
+    panel.style.display = 'flex';
+    body.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Загрузка...</div>';
+
+    const res = await Starget.api('GET', `/suppliers/${id}`);
+    if (!res || !res.success) { panel.style.display = 'none'; return; }
+
+    const s = res.data;
+    const typeLabel = s.type === 'legal' ? 'Юридическое лицо' : 'Физическое лицо / ИП';
+    const vehicles = (s.vehicles || []).length
+        ? (s.vehicles).map(v =>
+            `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-light)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 .5M13 16h2l3-4.5V9h-5v7z"/></svg>
+                <div>
+                    <div style="font-size:12px;font-weight:500">${v.tractor_brand || '—'} ${v.tractor_plate ? '<span class="text-mono" style="font-size:11px;color:var(--text-muted)">' + v.tractor_plate + '</span>' : ''}</div>
+                    ${v.trailer_brand || v.trailer_plate ? '<div style="font-size:11px;color:var(--text-muted)">Прицеп: ' + (v.trailer_brand || '') + ' ' + (v.trailer_plate || '') + '</div>' : ''}
+                </div>
+                <div style="margin-left:auto">${Starget.fmt.status(v.status || 'idle')}</div>
+            </div>`
+        ).join('')
+        : '<div style="font-size:12px;color:var(--text-muted)">Транспорт не добавлен</div>';
+
+    const docs = (s.documents || []).map(d =>
+        `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-light)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><path d="M9 12h6m-6 4h3M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+            <a href="/storage/${d.file_path}" target="_blank" style="font-size:12px;color:var(--primary);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.original_name || d.file_path}</a>
+        </div>`
+    ).join('') || '<div style="font-size:12px;color:var(--text-muted)">Документы не загружены</div>';
+
+    body.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+            <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--primary);flex-shrink:0">
+                ${Starget.fmt.initials(s.name || '?')}
+            </div>
+            <div>
+                <div style="font-size:15px;font-weight:700;color:var(--text)">${s.name || '—'}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${typeLabel}</div>
+            </div>
+            <div style="margin-left:auto">${Starget.fmt.status(s.status)}</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            ${field('БИН/ИИН', s.bin_iin)}
+            ${field('Контактное лицо', s.contact_name)}
+            ${field('Телефон', s.phone)}
+            ${field('Email', s.email)}
+        </div>
+
+        ${s.comment ? `<div style="margin-bottom:16px">${field('Комментарий', s.comment, true)}</div>` : ''}
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:8px">Транспорт</div>
+        ${vehicles}
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:16px 0 8px">Документы</div>
+        ${docs}
+
+        <div style="font-size:11px;color:var(--text-xs);margin-top:16px">Создан: ${Starget.fmt.datetime(s.created_at)}</div>`;
 }
+
+function field(label, value, full = false) {
+    return `<div style="${full ? 'grid-column:1/-1' : ''}">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">${label}</div>
+        <div style="font-size:13px;color:var(--text)">${value || '—'}</div>
+    </div>`;
+}
+
+function closeSupplierPanel() {
+    document.getElementById('supplierPanel').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const panel = document.getElementById('supplierPanel');
+    if (panel) panel.addEventListener('click', e => { if (e.target === panel) closeSupplierPanel(); });
+});
 
 document.getElementById('statusTabs').addEventListener('click', e => {
     const tab = e.target.closest('.tab');
@@ -158,4 +232,18 @@ document.getElementById('statusTabs').addEventListener('click', e => {
 
 loadSuppliers();
 </script>
+
+{{-- SUPPLIER DETAIL PANEL --}}
+<div id="supplierPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:flex-start;justify-content:flex-end">
+    <div style="background:var(--surface);width:100%;max-width:440px;height:100%;overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,.15);display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border-light);flex-shrink:0">
+            <div style="font-size:14px;font-weight:700;color:var(--text)">Поставщик</div>
+            <button onclick="closeSupplierPanel()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px" title="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div id="supplierPanelBody" style="padding:20px 24px;flex:1"></div>
+    </div>
+</div>
+
 @endpush

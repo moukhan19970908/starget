@@ -15,8 +15,9 @@ class DriverResource extends JsonResource
             'iin'             => $this->iin,
             'phone'           => $this->phone,
             'type'            => $this->type,
-            'license_classes' => $this->license_classes,
+            'license_classes' => $this->license_classes ? explode(',', $this->license_classes) : [],
             'status'          => $this->status,
+            'created_at'      => $this->created_at?->toDateString(),
             'documents'       => $this->whenLoaded('documents', fn() =>
                 $this->documents->map(fn($d) => [
                     'id'            => $d->id,
@@ -26,6 +27,13 @@ class DriverResource extends JsonResource
                     'issued_by'     => $d->issued_by,
                     'expires_at'    => $d->expires_at?->toDateString(),
                     'file_path'     => $d->file_path,
+                ])
+            ),
+            'vehicles'        => $this->whenLoaded('vehicles', fn() =>
+                $this->vehicles->map(fn($v) => [
+                    'id'            => $v->id,
+                    'tractor_brand' => $v->tractor_brand,
+                    'tractor_plate' => $v->tractor_plate,
                 ])
             ),
         ];

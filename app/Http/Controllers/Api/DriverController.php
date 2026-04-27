@@ -40,15 +40,17 @@ class DriverController extends Controller
             'success' => true,
             'data'    => DriverListResource::collection($drivers->items()),
             'meta'    => [
-                'current_page'       => $drivers->currentPage(),
-                'last_page'          => $drivers->lastPage(),
-                'per_page'           => $drivers->perPage(),
-                'total'              => $drivers->total(),
-                'total_count'        => $total,
-                'on_trip'            => $onTrip,
-                'load_percent'       => $loadPercent,
-                'expiring_docs_count' => $expiringDocs,
-                'reserve'            => $reserve,
+                'current_page' => $drivers->currentPage(),
+                'last_page'    => $drivers->lastPage(),
+                'per_page'     => $drivers->perPage(),
+                'total'        => $drivers->total(),
+            ],
+            'stats'   => [
+                'total'        => $total,
+                'on_route'     => $onTrip,
+                'load_percent' => $loadPercent,
+                'expiring_docs' => $expiringDocs,
+                'available'    => $reserve,
             ],
         ]);
     }

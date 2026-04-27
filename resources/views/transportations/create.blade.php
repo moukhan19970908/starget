@@ -40,15 +40,13 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Клиентский менеджер</label>
-                    <select class="form-select" id="clientManagerId">
-                        <option value="">Выберите менеджера...</option>
-                    </select>
+                    <input type="text" class="form-input" id="clientManagerDisplay" readonly placeholder="Берётся из заявки...">
+                    <input type="hidden" id="clientManagerId">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Логист</label>
-                    <select class="form-select" id="logisticManagerId">
-                        <option value="">Выберите логиста...</option>
-                    </select>
+                    <input type="text" class="form-input" id="logisticManagerDisplay" readonly>
+                    <input type="hidden" id="logisticManagerId">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Контракт клиента</label>
@@ -94,18 +92,11 @@
         {{-- ВОДИТЕЛЬ --}}
         <div class="form-section">
             <div class="form-section-title">Водитель</div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Поиск по ИИН</label>
-                    <div class="autocomplete-wrap">
-                        <input type="text" class="form-input" id="driverIin" placeholder="ИИН водителя" oninput="searchDriverByIin()">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Поиск по телефону</label>
-                    <div class="autocomplete-wrap">
-                        <input type="text" class="form-input" id="driverPhone" placeholder="+7..." oninput="searchDriverByPhone()">
-                    </div>
+            <div class="form-group">
+                <label class="form-label">Поиск по ИИН или ФИО</label>
+                <div class="autocomplete-wrap">
+                    <input type="text" class="form-input" id="driverSearch" placeholder="Введите ИИН или ФИО водителя..." oninput="searchDriver()" autocomplete="off">
+                    <div class="autocomplete-dropdown" id="driverDropdown"></div>
                 </div>
             </div>
             <div class="driver-found-card" id="driverFound" style="display:none">
@@ -208,13 +199,11 @@ async function init() {
         Starget.fillSelect('supplierId', suppliers.data, 'id', s => s.company_name || s.name, 'Выберите поставщика...');
     }
 
-    // Load managers
-    const users = await Starget.api('GET', '/auth/users?role=client_manager,logistic_manager&limit=100');
-    if (users && users.data) {
-        const cms = users.data.filter(u => u.role === 'client_manager');
-        const lms = users.data.filter(u => u.role === 'logistic_manager');
-        Starget.fillSelect('clientManagerId', cms, 'id', 'name', 'Выберите...');
-        Starget.fillSelect('logisticManagerId', lms, 'id', 'name', 'Выберите...');
+    // Set current user as logistic manager
+    const me = Starget.auth.user();
+    if (me) {
+        document.getElementById('logisticManagerId').value = me.id;
+        document.getElementById('logisticManagerDisplay').value = me.full_name || (me.name + (me.surname ? ' ' + me.surname : ''));
     }
 
     if (appId) loadApplicationInfo();
@@ -228,18 +217,23 @@ async function loadApplicationInfo() {
     document.getElementById('transSubtitle').textContent = `Заявка №${a.id}`;
     document.getElementById('appInfoBlock').style.display = 'block';
     document.getElementById('appInfoGrid').innerHTML = `
-        <div class="detail-item"><div class="detail-label">Клиент</div><div class="detail-value">${a.client?.company_name || a.client?.name || '—'}</div></div>
-        <div class="detail-item"><div class="detail-label">Маршрут</div><div class="detail-value">${[a.from_city?.name, a.to_city?.name].filter(Boolean).join(' → ') || '—'}</div></div>
+        <div class="detail-item"><div class="detail-label">Клиент</div><div class="detail-value">${a.client?.name || '—'}</div></div>
+        <div class="detail-item"><div class="detail-label">Маршрут</div><div class="detail-value">${[a.departure_city, a.destination_city].filter(Boolean).join(' → ') || '—'}</div></div>
     `;
 
     document.getElementById('appSummary').style.display = 'block';
-    Starget.dom.set('sumRoute', [a.from_city?.name, a.to_city?.name].filter(Boolean).join(' → ') || '—');
+    Starget.dom.set('sumRoute', [a.departure_city, a.destination_city].filter(Boolean).join(' → ') || '—');
     Starget.dom.set('sumCargo', a.cargo_name || '—');
-    Starget.dom.set('sumClientRate', Starget.fmt.money(a.client_rate, a.currency));
-    Starget.dom.set('sumLoadDate', Starget.fmt.date(a.loading_date) || '—');
+    Starget.dom.set('sumClientRate', Starget.fmt.money(a.client_rate, a.client_rate_currency || 'KZT'));
+    Starget.dom.set('sumLoadDate', Starget.fmt.date(a.departure_date) || '—');
 
-    if (a.contract_id) {
-        document.getElementById('clientContractId').innerHTML = `<option value="${a.contract_id}">${a.contract?.number || 'Контракт ' + a.contract_id}</option>`;
+    if (a.contract?.id) {
+        document.getElementById('clientContractId').innerHTML = `<option value="${a.contract.id}">${a.contract.number || 'Контракт ' + a.contract.id}</option>`;
+    }
+
+    if (a.author) {
+        document.getElementById('clientManagerId').value = a.author.id;
+        document.getElementById('clientManagerDisplay').value = a.author.full_name || a.author.name || '—';
     }
 }
 
@@ -266,34 +260,55 @@ function selectVehicle(id, tractor, trailer) {
     document.getElementById('tractorDropdown').innerHTML = '';
 }
 
-async function searchDriverByIin() {
-    const iin = document.getElementById('driverIin').value;
-    if (iin.length < 3) return;
-    const res = await Starget.api('GET', `/drivers/search?iin=${encodeURIComponent(iin)}`);
-    if (res && res.data) fillDriver(res.data);
+let driverSearchTimer;
+
+async function searchDriver() {
+    clearTimeout(driverSearchTimer);
+    const q = document.getElementById('driverSearch').value.trim();
+    const dd = document.getElementById('driverDropdown');
+    if (q.length < 2) { dd.innerHTML = ''; return; }
+    driverSearchTimer = setTimeout(async () => {
+        const res = await Starget.api('GET', `/drivers?search=${encodeURIComponent(q)}&per_page=20`);
+        const list = res?.data || [];
+        if (!list.length) {
+            dd.innerHTML = '<div class="ac-item ac-empty">Водители не найдены</div>';
+            return;
+        }
+        dd.innerHTML = list.map(d =>
+            `<div class="ac-item" onclick='selectDriver(${JSON.stringify(d)})'>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="initials-avatar" style="width:28px;height:28px;font-size:11px;background:#2563eb">${Starget.fmt.initials(d.full_name || '?')}</div>
+                    <div>
+                        <div style="font-weight:500">${d.full_name || '—'}</div>
+                        <div style="font-size:11px;color:var(--text-muted)">${d.iin || ''} ${d.phone ? '· ' + d.phone : ''}</div>
+                    </div>
+                </div>
+            </div>`
+        ).join('');
+    }, 300);
 }
 
-async function searchDriverByPhone() {
-    const phone = document.getElementById('driverPhone').value;
-    if (phone.length < 5) return;
-    const res = await Starget.api('GET', `/drivers/search?phone=${encodeURIComponent(phone)}`);
-    if (res && res.data) fillDriver(res.data);
+function selectDriver(d) {
+    document.getElementById('driverSearch').value = d.full_name || '';
+    document.getElementById('driverDropdown').innerHTML = '';
+    fillDriver(d);
 }
 
 function fillDriver(d) {
     document.getElementById('driverId').value = d.id;
     document.getElementById('driverFound').style.display = 'flex';
-    document.getElementById('driverAvatar').textContent = Starget.fmt.initials(d.full_name || d.name || '?');
-    Starget.dom.set('driverName', d.full_name || d.name || '—');
+    document.getElementById('driverAvatar').textContent = Starget.fmt.initials(d.full_name || '?');
+    Starget.dom.set('driverName', d.full_name || '—');
     Starget.dom.set('driverIinDisplay', d.iin || '—');
     document.getElementById('driverDocStatus').innerHTML = Starget.fmt.docStatus(d.documents || []);
+    document.getElementById('driverDropdown')?.remove();
 }
 
 function clearDriver() {
     document.getElementById('driverId').value = '';
     document.getElementById('driverFound').style.display = 'none';
-    document.getElementById('driverIin').value = '';
-    document.getElementById('driverPhone').value = '';
+    document.getElementById('driverSearch').value = '';
+    document.getElementById('driverDropdown').innerHTML = '';
 }
 
 async function onSupplierChange() {

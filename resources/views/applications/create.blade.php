@@ -59,11 +59,11 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Контакт отправителя</label>
-                    <input type="text" class="form-input" id="shipperContact" placeholder="+7...">
+                    <input type="text" class="form-input" id="shipperContact" placeholder="+7(000)000-00-00" maxlength="16">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Контакт получателя</label>
-                    <input type="text" class="form-input" id="consigneeContact" placeholder="+7...">
+                    <input type="text" class="form-input" id="consigneeContact" placeholder="+7(000)000-00-00" maxlength="16">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Дата загрузки <span class="required">*</span></label>
@@ -192,16 +192,25 @@
 @push('scripts')
 <script>
 let stopCount = 0;
+let stopTypes = [];
 
 async function init() {
-    const [cities, loadTypes] = await Promise.all([
+    const [cities, loadTypes, stopTypesData, currenciesData] = await Promise.all([
         Starget.loadCities(),
         Starget.loadLoadingTypes(),
+        Starget.loadStopTypes(),
+        Starget.api('GET', '/dict/currencies'),
     ]);
+
+    stopTypes = stopTypesData || [];
 
     Starget.fillSelect('fromCityId', cities, 'id', 'name', 'Выберите город...');
     Starget.fillSelect('toCityId', cities, 'id', 'name', 'Выберите город...');
     Starget.fillSelect('loadingTypeId', loadTypes, 'id', 'name', 'Выберите тип...');
+
+    if (currenciesData && currenciesData.data) {
+        Starget.fillSelect('currency', currenciesData.data, 'id', 'code', '');
+    }
 
     // Clients
     const cr = await Starget.api('GET', '/clients?limit=200');
@@ -230,13 +239,10 @@ function addStop() {
     const div = document.createElement('div');
     div.className = 'stop-row';
     div.id = `stop_${stopCount}`;
+    const typeOptions = stopTypes.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
     div.innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
         <div class="stop-num">${stopCount}</div>
-        <select class="form-select" style="flex:1" id="stopType_${stopCount}">
-            <option value="loading">Загрузка</option>
-            <option value="unloading">Выгрузка</option>
-            <option value="transit">Транзит</option>
-        </select>
+        <select class="form-select" style="flex:1" id="stopType_${stopCount}">${typeOptions}</select>
         <input type="text" class="form-input" style="flex:2" id="stopAddr_${stopCount}" placeholder="Адрес остановки">
         <button type="button" class="btn-icon-sm red" onclick="this.closest('.stop-row').remove()">✕</button>
     </div>`;
@@ -264,7 +270,7 @@ function collectStops() {
         const t = document.getElementById(`stopType_${i}`);
         const a = document.getElementById(`stopAddr_${i}`);
         if (t && a && a.value) {
-            stops.push({ type: t.value, address: a.value, order: stops.length + 1 });
+            stops.push({ stop_type_id: t.value, address: a.value, sort_order: stops.length + 1 });
         }
     }
     return stops;
@@ -280,36 +286,36 @@ async function submitApplication() {
 
 async function doSubmit(status) {
     const payload = {
-        client_id:         document.getElementById('clientId').value,
-        contract_id:       document.getElementById('contractId').value || null,
-        from_city_id:      document.getElementById('fromCityId').value,
-        to_city_id:        document.getElementById('toCityId').value,
-        shipper_name:      document.getElementById('shipperName').value,
-        consignee_name:    document.getElementById('consigneeName').value,
-        shipper_contact:   document.getElementById('shipperContact').value,
-        consignee_contact: document.getElementById('consigneeContact').value,
-        loading_date:      document.getElementById('loadingDate').value,
-        unloading_date:    document.getElementById('unloadingDate').value,
-        loading_address:   document.getElementById('loadingAddress').value,
-        unloading_address: document.getElementById('unloadingAddress').value,
-        cargo_name:        document.getElementById('cargoName').value,
-        loading_type_id:   document.getElementById('loadingTypeId').value || null,
-        cargo_weight:      document.getElementById('cargoWeight').value || null,
-        cargo_volume:      document.getElementById('cargoVolume').value || null,
-        cargo_value:       document.getElementById('cargoValue').value || null,
-        special_conditions:document.getElementById('specialConditions').value,
-        client_rate:       document.getElementById('clientRate').value,
-        currency:          document.getElementById('currency').value,
-        exchange_rate:     document.getElementById('exchangeRate').value || 1,
-        vat_enabled:       document.getElementById('vatEnabled').checked,
-        notes:             document.getElementById('notes').value,
-        status:            status,
-        stops:             collectStops(),
+        client_id:                document.getElementById('clientId').value,
+        contract_id:              document.getElementById('contractId').value || null,
+        departure_city_id:        document.getElementById('fromCityId').value,
+        destination_city_id:      document.getElementById('toCityId').value,
+        shipper:                  document.getElementById('shipperName').value,
+        consignee:                document.getElementById('consigneeName').value,
+        contact_loading:          document.getElementById('shipperContact').value,
+        contact_unloading:        document.getElementById('consigneeContact').value,
+        departure_date:           document.getElementById('loadingDate').value,
+        arrival_date:             document.getElementById('unloadingDate').value,
+        loading_address:          document.getElementById('loadingAddress').value,
+        unloading_address:        document.getElementById('unloadingAddress').value,
+        cargo_name:               document.getElementById('cargoName').value,
+        loading_type_id:          document.getElementById('loadingTypeId').value || null,
+        weight:                   document.getElementById('cargoWeight').value || null,
+        volume:                   document.getElementById('cargoVolume').value || null,
+        cargo_cost:               document.getElementById('cargoValue').value || null,
+        special_conditions:       document.getElementById('specialConditions').value,
+        client_rate:              document.getElementById('clientRate').value,
+        client_rate_currency_id:  document.getElementById('currency').value || null,
+        client_rate_exchange:     document.getElementById('exchangeRate').value || 1,
+        client_rate_vat:          document.getElementById('vatEnabled').checked,
+        comment:                  document.getElementById('notes').value,
+        status:                   status,
+        stops:                    collectStops(),
     };
 
     if (!payload.client_id) { Starget.toast('Выберите клиента', 'error'); return; }
-    if (!payload.from_city_id) { Starget.toast('Укажите город отправки', 'error'); return; }
-    if (!payload.to_city_id) { Starget.toast('Укажите город назначения', 'error'); return; }
+    if (!payload.departure_city_id) { Starget.toast('Укажите город отправки', 'error'); return; }
+    if (!payload.destination_city_id) { Starget.toast('Укажите город назначения', 'error'); return; }
     if (!payload.cargo_name) { Starget.toast('Укажите наименование груза', 'error'); return; }
 
     const res = await Starget.api('POST', '/applications', payload);
@@ -319,6 +325,38 @@ async function doSubmit(status) {
     }
 }
 
+function applyPhoneMask(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function (e) {
+        let digits = this.value.replace(/\D/g, '');
+        if (digits.startsWith('8')) digits = '7' + digits.slice(1);
+        if (!digits.startsWith('7')) digits = '7' + digits;
+        digits = digits.slice(0, 11);
+        let result = '+7';
+        if (digits.length > 1) result += '(' + digits.slice(1, 4);
+        if (digits.length >= 4) result += ')';
+        if (digits.length > 4)  result += digits.slice(4, 7);
+        if (digits.length > 7)  result += '-' + digits.slice(7, 9);
+        if (digits.length > 9)  result += '-' + digits.slice(9, 11);
+        this.value = result;
+    });
+    el.addEventListener('keydown', function (e) {
+        if (e.key === 'Backspace' && (this.value === '+7(' || this.value === '+7')) {
+            this.value = '';
+            e.preventDefault();
+        }
+    });
+    el.addEventListener('focus', function () {
+        if (!this.value) this.value = '+7(';
+    });
+    el.addEventListener('blur', function () {
+        if (this.value === '+7(') this.value = '';
+    });
+}
+
+applyPhoneMask('shipperContact');
+applyPhoneMask('consigneeContact');
 init();
 recalc();
 </script>

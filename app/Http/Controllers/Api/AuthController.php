@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,19 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data'    => new UserResource($request->user()),
+        ]);
+    }
+
+    public function users(Request $request): JsonResponse
+    {
+        $roles = $request->role ? explode(',', $request->role) : null;
+        $users = User::when($roles, fn($q) => $q->whereIn('role', $roles))
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => UserResource::collection($users),
         ]);
     }
 }

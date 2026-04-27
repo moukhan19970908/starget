@@ -210,7 +210,7 @@ async function loadDrivers(page) {
 }
 
 function viewDriver(id) {
-    Starget.toast('Просмотр водителя — в разработке', 'info');
+    location.href = `/drivers/${id}`;
 }
 
 document.getElementById('statusTabs').addEventListener('click', e => {

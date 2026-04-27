@@ -155,13 +155,92 @@ async function loadContracts(page) {
 }
 
 function viewContract(id) {
-    // TODO: open contract detail modal or page
     Starget.toast('Просмотр договора — в разработке', 'info');
 }
 
-function createContract() {
-    Starget.toast('Создание договора — в разработке', 'info');
+// ── CREATE CONTRACT MODAL ─────────────────────────────────────
+let _clientsLoaded = false;
+let _suppliersLoaded = false;
+
+async function createContract() {
+    document.getElementById('createContractModal').style.display = 'flex';
+    document.getElementById('createContractForm').reset();
+    document.getElementById('cc_clientRow').style.display = 'none';
+    document.getElementById('cc_supplierRow').style.display = 'none';
+    document.getElementById('cc_fileNameLabel').textContent = 'Файл не выбран';
+
+    if (!_clientsLoaded) {
+        const res = await Starget.api('GET', '/clients?limit=200');
+        if (res && res.data) {
+            Starget.fillSelect('cc_client_id', res.data, 'id', i => i.company_name || i.name, 'Выберите клиента...');
+            _clientsLoaded = true;
+        }
+    }
+    if (!_suppliersLoaded) {
+        const res = await Starget.api('GET', '/suppliers?limit=200');
+        if (res && res.data) {
+            Starget.fillSelect('cc_supplier_id', res.data, 'id', i => i.company_name || i.name, 'Выберите поставщика...');
+            _suppliersLoaded = true;
+        }
+    }
 }
+
+function closeCreateContractModal() {
+    document.getElementById('createContractModal').style.display = 'none';
+}
+
+function onContractTypeChange() {
+    const type = document.getElementById('cc_type').value;
+    document.getElementById('cc_clientRow').style.display   = type === 'client'   ? '' : 'none';
+    document.getElementById('cc_supplierRow').style.display = type === 'supplier' ? '' : 'none';
+}
+
+async function submitCreateContract() {
+    const number = document.getElementById('cc_number').value.trim();
+    const type   = document.getElementById('cc_type').value;
+
+    if (!number) { Starget.toast('Введите номер договора', 'error'); return; }
+    if (!type)   { Starget.toast('Выберите тип договора', 'error'); return; }
+
+    const fd = new FormData();
+    fd.append('number', number);
+    fd.append('type',   type);
+
+    const clientId   = document.getElementById('cc_client_id').value;
+    const supplierId = document.getElementById('cc_supplier_id').value;
+    if (type === 'client'   && clientId)   fd.append('client_id',   clientId);
+    if (type === 'supplier' && supplierId) fd.append('supplier_id', supplierId);
+
+    const signedDate = document.getElementById('cc_signed_date').value;
+    const expiresAt  = document.getElementById('cc_expires_at').value;
+    const status     = document.getElementById('cc_status').value;
+    if (signedDate) fd.append('signed_date', signedDate);
+    if (expiresAt)  fd.append('expires_at',  expiresAt);
+    if (status)     fd.append('status',      status);
+
+    const fileInput = document.getElementById('cc_file');
+    if (fileInput.files[0]) fd.append('file', fileInput.files[0]);
+
+    const btn = document.getElementById('cc_submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Сохранение...';
+
+    const res = await Starget.api('POST', '/contracts', fd, true);
+
+    btn.disabled = false;
+    btn.textContent = 'Создать договор';
+
+    if (res && res.success) {
+        Starget.toast('Договор создан', 'success');
+        closeCreateContractModal();
+        loadContracts();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('createContractModal');
+    if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeCreateContractModal(); });
+});
 
 function exportContracts() {
     Starget.toast('Экспорт — в разработке', 'info');
@@ -178,4 +257,83 @@ document.getElementById('statusTabs').addEventListener('click', e => {
 
 loadContracts();
 </script>
+
+{{-- CREATE CONTRACT MODAL --}}
+<div id="createContractModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+        {{-- Header --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border-light)">
+            <div>
+                <div style="font-size:15px;font-weight:700;color:var(--text)">Новый договор</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Заполните реквизиты договора</div>
+            </div>
+            <button onclick="closeCreateContractModal()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px" title="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {{-- Form --}}
+        <form id="createContractForm" onsubmit="event.preventDefault();submitCreateContract()" style="padding:20px 24px">
+            <div class="form-grid" style="margin-bottom:14px">
+                <div class="form-group">
+                    <label class="form-label">Номер договора <span style="color:var(--danger)">*</span></label>
+                    <input type="text" class="form-input" id="cc_number" placeholder="ДГ-2026-001">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Тип договора <span style="color:var(--danger)">*</span></label>
+                    <select class="form-select" id="cc_type" onchange="onContractTypeChange()">
+                        <option value="">Выберите тип...</option>
+                        <option value="client">Клиентский</option>
+                        <option value="supplier">Поставщиковый</option>
+                    </select>
+                </div>
+
+                <div class="form-group full" id="cc_clientRow" style="display:none">
+                    <label class="form-label">Клиент</label>
+                    <select class="form-select" id="cc_client_id">
+                        <option value="">Выберите клиента...</option>
+                    </select>
+                </div>
+
+                <div class="form-group full" id="cc_supplierRow" style="display:none">
+                    <label class="form-label">Поставщик</label>
+                    <select class="form-select" id="cc_supplier_id">
+                        <option value="">Выберите поставщика...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Дата подписания</label>
+                    <input type="date" class="form-input" id="cc_signed_date">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дата истечения</label>
+                    <input type="date" class="form-input" id="cc_expires_at">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Статус</label>
+                    <select class="form-select" id="cc_status">
+                        <option value="active">Активен</option>
+                        <option value="draft">Черновик</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">Файл договора (PDF, DOC, DOCX)</label>
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                        <span class="btn btn-outline" style="font-size:12px;padding:7px 14px;white-space:nowrap" onclick="document.getElementById('cc_file').click()">Выбрать файл</span>
+                        <span id="cc_fileNameLabel" style="font-size:12px;color:var(--text-muted)">Файл не выбран</span>
+                    </label>
+                    <input type="file" id="cc_file" accept=".pdf,.doc,.docx" style="display:none" onchange="document.getElementById('cc_fileNameLabel').textContent = this.files[0]?.name || 'Файл не выбран'">
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border-light)">
+                <button type="button" class="btn btn-outline" onclick="closeCreateContractModal()">Отмена</button>
+                <button type="submit" class="btn btn-primary" id="cc_submitBtn">Создать договор</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endpush

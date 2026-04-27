@@ -25,7 +25,7 @@ class TransportationService
 
     public function create(Application $app, array $data, User $logist): Transportation
     {
-        if ($app->status !== 'in_transit') {
+        if ($app->status !== 'open') {
             throw new \DomainException('Перевозку можно создать только для заявки со статусом "В ПУТИ".');
         }
 

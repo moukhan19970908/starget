@@ -168,11 +168,135 @@ function viewClient(id) {
     Starget.toast('Просмотр клиента — в разработке', 'info');
 }
 
+// ── CREATE CLIENT MODAL ──────────────────────────────────────
 function createClient() {
-    Starget.toast('Создание клиента — в разработке', 'info');
+    document.getElementById('createClientModal').style.display = 'flex';
+    document.getElementById('createClientForm').reset();
 }
+
+function closeCreateClientModal() {
+    document.getElementById('createClientModal').style.display = 'none';
+}
+
+async function submitCreateClient() {
+    const name    = document.getElementById('cc_name').value.trim();
+    const type    = document.getElementById('cc_type').value;
+
+    if (!name) { Starget.toast('Введите название компании', 'error'); return; }
+    if (!type) { Starget.toast('Выберите тип клиента', 'error'); return; }
+
+    const payload = {
+        name:           name,
+        type:           type,
+        bin_iin:        document.getElementById('cc_bin_iin').value.trim() || null,
+        contact_name:   document.getElementById('cc_contact_name').value.trim() || null,
+        phone:          document.getElementById('cc_phone').value.trim() || null,
+        email:          document.getElementById('cc_email').value.trim() || null,
+        legal_address:  document.getElementById('cc_legal_address').value.trim() || null,
+        actual_address: document.getElementById('cc_actual_address').value.trim() || null,
+        status:         document.getElementById('cc_status').value || 'active',
+    };
+
+    const btn = document.getElementById('cc_submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Сохранение...';
+
+    const res = await Starget.api('POST', '/clients', payload);
+
+    btn.disabled = false;
+    btn.textContent = 'Создать клиента';
+
+    if (res && res.success) {
+        Starget.toast('Клиент создан', 'success');
+        closeCreateClientModal();
+        loadClients();
+    }
+}
+
+// Close modal on backdrop click
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('createClientModal');
+    if (modal) {
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeCreateClientModal();
+        });
+    }
+});
 
 loadClients();
 loadPendingTasks();
 </script>
+
+{{-- CREATE CLIENT MODAL --}}
+<div id="createClientModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+        {{-- Header --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border-light)">
+            <div>
+                <div style="font-size:15px;font-weight:700;color:var(--text)">Новый клиент</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Заполните реквизиты компании</div>
+            </div>
+            <button onclick="closeCreateClientModal()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px" title="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {{-- Form --}}
+        <form id="createClientForm" onsubmit="event.preventDefault();submitCreateClient()" style="padding:20px 24px">
+            <div class="form-grid" style="margin-bottom:14px">
+                <div class="form-group full">
+                    <label class="form-label">Название компании <span style="color:var(--danger)">*</span></label>
+                    <input type="text" class="form-input" id="cc_name" placeholder="ТОО «Пример», ИП Иванов...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Тип клиента <span style="color:var(--danger)">*</span></label>
+                    <select class="form-select" id="cc_type">
+                        <option value="">Выберите тип...</option>
+                        <option value="corporate">Корпоративный</option>
+                        <option value="supplier">Поставщик</option>
+                        <option value="archive">Архив</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">БИН / ИИН</label>
+                    <input type="text" class="form-input" id="cc_bin_iin" placeholder="123456789012" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Контактное лицо</label>
+                    <input type="text" class="form-input" id="cc_contact_name" placeholder="Иванов Иван Иванович">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Телефон</label>
+                    <input type="tel" class="form-input" id="cc_phone" placeholder="+7 777 000 00 00">
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="cc_email" placeholder="info@example.com">
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">Юридический адрес</label>
+                    <input type="text" class="form-input" id="cc_legal_address" placeholder="г. Алматы, ул. Примерная, д. 1">
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">Фактический адрес</label>
+                    <input type="text" class="form-input" id="cc_actual_address" placeholder="г. Алматы, ул. Примерная, д. 1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Статус</label>
+                    <select class="form-select" id="cc_status">
+                        <option value="active">Активен</option>
+                        <option value="inactive">Неактивен</option>
+                    </select>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border-light)">
+                <button type="button" class="btn btn-outline" onclick="closeCreateClientModal()">Отмена</button>
+                <button type="submit" class="btn btn-primary" id="cc_submitBtn">Создать клиента</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endpush

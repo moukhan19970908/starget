@@ -21,7 +21,7 @@ class DriverListResource extends JsonResource
             'full_name'        => $this->full_name,
             'iin'              => $this->iin,
             'phone'            => $this->phone,
-            'license_classes'  => $this->license_classes,
+            'license_classes'  => $this->license_classes ? explode(',', $this->license_classes) : [],
             'status'           => $this->status,
             'docs_status'      => $hasExpiringDocs ? 'expiring' : 'valid',
             'current_vehicle'  => $currentVehicle ? [

@@ -24,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::get('/auth/users', [AuthController::class, 'users']);
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('can:dashboard.view');

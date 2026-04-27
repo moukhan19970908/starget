@@ -15,6 +15,7 @@ class StoreSupplierRequest extends FormRequest
     {
         return [
             'name'         => ['required', 'string', 'max:255'],
+            'status'       => ['nullable','string', 'in:active,pending,inactive'],
             'bin_iin'      => ['nullable', 'string', 'max:20'],
             'type'         => ['required', 'in:individual,legal'],
             'contact_name' => ['nullable', 'string', 'max:255'],
@@ -23,6 +24,9 @@ class StoreSupplierRequest extends FormRequest
             'comment'      => ['nullable', 'string'],
             'documents'    => ['nullable', 'array'],
             'documents.*'  => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'vehicles'     => ['nullable', 'array'],
+            'vehicles.*.tractor_brand' => ['nullable', 'string', 'max:255'],
+            'vehicles.*.tractor_plate' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

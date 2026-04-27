@@ -8,6 +8,7 @@ use App\Http\Resources\ContractListResource;
 use App\Http\Resources\SupplierListResource;
 use App\Http\Resources\SupplierResource;
 use App\Models\Supplier;
+use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,7 +21,7 @@ class SupplierController extends Controller
                 $q->where('name', 'like', "%{$request->search}%")
                   ->orWhere('bin_iin', 'like', "%{$request->search}%"))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->orderBy('name')
+            ->orderByDesc('created_at')
             ->paginate(20);
 
         $total         = Supplier::count();
@@ -46,7 +47,11 @@ class SupplierController extends Controller
 
     public function store(StoreSupplierRequest $request): JsonResponse
     {
-        $supplier = Supplier::create($request->safe()->except('documents'));
+        $data = array_merge(
+            collect($request->safe()->except('documents', 'vehicles'))->toArray(),
+            ['status' => 'active']
+        );
+        $supplier = Supplier::create($data);
 
         if ($request->hasFile('documents')) {
             foreach ($request->file('documents') as $file) {
@@ -55,6 +60,20 @@ class SupplierController extends Controller
                     'file_path'     => $path,
                     'original_name' => $file->getClientOriginalName(),
                 ]);
+            }
+        }
+
+        if ($request->filled('vehicles')) {
+            foreach ($request->input('vehicles') as $v) {
+                $brand = trim($v['tractor_brand'] ?? '');
+                $plate = trim($v['tractor_plate'] ?? '');
+                if (!$brand && !$plate) continue;
+                $vehicle = Vehicle::create([
+                    'tractor_brand' => $brand ?: null,
+                    'tractor_plate' => $plate ?: null,
+                    'status'        => 'idle',
+                ]);
+                $supplier->vehicles()->attach($vehicle->id);
             }
         }
 
@@ -67,7 +86,7 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier): JsonResponse
     {
-        $supplier->load(['documents']);
+        $supplier->load(['documents', 'vehicles']);
 
         return response()->json([
             'success' => true,

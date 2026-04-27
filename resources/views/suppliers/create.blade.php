@@ -27,7 +27,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">БИН/ИИН <span class="required">*</span></label>
-                    <input type="text" class="form-input" id="bin" placeholder="123456789012" maxlength="12">
+                    <input type="text" class="form-input" id="bin" placeholder="123456789012" maxlength="12" oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('binHint').style.display='none'">
+                    <span class="form-hint" id="binHint" style="display:none;color:var(--danger)">БИН/ИИН должен содержать ровно 12 цифр</span>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Тип организации <span class="required">*</span></label>
@@ -53,11 +54,13 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Телефон</label>
-                    <input type="tel" class="form-input" id="phone" placeholder="+7 (777) 000-00-00">
+                    <input type="tel" class="form-input" id="phone" placeholder="+7 777 777 77 77" maxlength="16" oninput="formatKzPhone(this)" onkeydown="handleKzPhoneKey(event, this)">
+                    <span class="form-hint" id="phoneHint" style="display:none;color:var(--danger)">Введите номер в формате +7 xxx xxx xx xx</span>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Email</label>
-                    <input type="email" class="form-input" id="email" placeholder="company@example.kz">
+                    <input type="email" class="form-input" id="email" placeholder="company@example.kz" oninput="document.getElementById('emailHint').style.display='none'">
+                    <span class="form-hint" id="emailHint" style="display:none;color:var(--danger)">Введите корректный email-адрес</span>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Адрес</label>
@@ -82,11 +85,11 @@
 
         {{-- ДОКУМЕНТЫ --}}
         <div class="form-section">
-            <div class="form-section-title">Документы и скан-копии</div>
             <div class="form-group">
                 <label class="form-label">Комментарий</label>
                 <textarea class="form-input" id="notes" rows="3" placeholder="Дополнительная информация..."></textarea>
             </div>
+            <div class="form-section-title">Документы и скан-копии</div>
             <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                 <div class="file-drop-text">Перетащите файлы или <span>нажмите для выбора</span></div>
@@ -100,13 +103,6 @@
     {{-- RIGHT: STATUS PANEL --}}
     <div>
         <div class="status-panel">
-            <div class="status-panel-badge">
-                <span class="badge badge-warning" style="font-size:11px;padding:6px 12px">НА ПРОВЕРКЕ</span>
-            </div>
-            <div class="status-panel-info">
-                После сохранения поставщик будет отправлен на проверку. После одобрения статус изменится на «Активный».
-            </div>
-            <div class="finance-divider"></div>
             <button class="btn btn-primary btn-block" onclick="saveSupplier()">Сохранить поставщика</button>
             <a href="/suppliers" class="btn btn-outline btn-block" style="margin-top:8px;text-align:center;display:block">Отмена</a>
         </div>
@@ -116,6 +112,30 @@
 
 @push('scripts')
 <script>
+// ── PHONE MASK +7 xxx xxx xx xx ──────────────────────────────
+function formatKzPhone(input) {
+    let raw = input.value.replace(/\D/g, '');
+    // Ensure starts with 7
+    if (raw.startsWith('8')) raw = '7' + raw.slice(1);
+    if (!raw.startsWith('7')) raw = '7' + raw;
+    raw = raw.slice(0, 11);
+    let out = '+7';
+    if (raw.length > 1)  out += ' ' + raw.slice(1, 4);
+    if (raw.length > 4)  out += ' ' + raw.slice(4, 7);
+    if (raw.length > 7)  out += ' ' + raw.slice(7, 9);
+    if (raw.length > 9)  out += ' ' + raw.slice(9, 11);
+    input.value = out;
+    const hint = document.getElementById('phoneHint');
+    if (hint) hint.style.display = 'none';
+}
+
+function handleKzPhoneKey(e, input) {
+    // Allow navigation, deletion, etc.
+    if (['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) return;
+    // Block if already at max length
+    if (input.value.length >= 16 && !window.getSelection()?.toString()) return;
+}
+
 let vehicleCount = 0;
 
 function addVehicleRow() {
@@ -165,23 +185,50 @@ function collectVehicles() {
 }
 
 async function saveSupplier() {
-    const payload = {
-        company_name:   document.getElementById('companyName').value,
-        bin:            document.getElementById('bin').value,
-        type:           document.getElementById('orgType').value,
-        specialization: document.getElementById('specialization').value,
-        contact_person: document.getElementById('contactPerson').value,
-        phone:          document.getElementById('phone').value,
-        email:          document.getElementById('email').value,
-        address:        document.getElementById('address').value,
-        notes:          document.getElementById('notes').value,
-        vehicles:       collectVehicles(),
-    };
+    const name  = document.getElementById('companyName').value.trim();
+    const bin   = document.getElementById('bin').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
 
-    if (!payload.company_name) { Starget.toast('Введите название компании', 'error'); return; }
-    if (!payload.bin) { Starget.toast('Введите БИН/ИИН', 'error'); return; }
+    if (!name) { Starget.toast('Введите название компании', 'error'); return; }
+    if (!bin || !/^\d{12}$/.test(bin)) {
+        Starget.toast('БИН/ИИН должен содержать ровно 12 цифр', 'error');
+        document.getElementById('binHint').style.display = '';
+        document.getElementById('bin').focus();
+        return;
+    }
+    if (phone && !/^\+7 \d{3} \d{3} \d{2} \d{2}$/.test(phone)) {
+        Starget.toast('Введите номер телефона в формате +7 xxx xxx xx xx', 'error');
+        document.getElementById('phoneHint').style.display = '';
+        document.getElementById('phone').focus();
+        return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        Starget.toast('Введите корректный email-адрес', 'error');
+        document.getElementById('emailHint').style.display = '';
+        document.getElementById('email').focus();
+        return;
+    }
 
-    const res = await Starget.api('POST', '/suppliers', payload);
+    const fd = new FormData();
+    fd.append('name',         name);
+    fd.append('bin_iin',      bin);
+    fd.append('type',         document.getElementById('orgType').value);
+    fd.append('contact_name', document.getElementById('contactPerson').value.trim());
+    fd.append('phone',        phone);
+    fd.append('email',        email);
+    fd.append('comment',      document.getElementById('notes').value.trim());
+    fd.append('status',       'pending');
+
+    const files = document.getElementById('fileInput').files;
+    Array.from(files).forEach(f => fd.append('documents[]', f));
+
+    collectVehicles().forEach((v, i) => {
+        fd.append(`vehicles[${i}][tractor_brand]`, v.brand);
+        fd.append(`vehicles[${i}][tractor_plate]`, v.plate);
+    });
+
+    const res = await Starget.api('POST', '/suppliers', fd, true);
     if (res && res.success) {
         Starget.toast('Поставщик создан', 'success');
         setTimeout(() => { location.href = '/suppliers'; }, 800);
