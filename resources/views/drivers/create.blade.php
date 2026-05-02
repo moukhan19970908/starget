@@ -38,7 +38,7 @@
                     <input type="text" class="form-input" id="iin" placeholder="123456789012" maxlength="12">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Тип</label>
+                    <label class="form-label">Тип <span class="required">*</span></label>
                     <select class="form-select" id="personType">
                         <option value="individual">Физическое лицо</option>
                         <option value="legal">Юридическое лицо (ИП)</option>
@@ -49,7 +49,7 @@
                     <input type="tel" class="form-input" id="phone" placeholder="+7 (777) 000-00-00">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Категории прав</label>
+                    <label class="form-label">Категории прав <span class="required">*</span></label>
                     <div class="checkbox-row">
                         <label><input type="checkbox" value="B" id="licB"> B</label>
                         <label><input type="checkbox" value="C" id="licC"> C</label>
@@ -62,7 +62,7 @@
 
         {{-- ДОКУМЕНТЫ --}}
         <div class="form-section">
-            <div class="form-section-title">Документы</div>
+            <div class="form-section-title">Документы <span class="required">*</span></div>
 
             <table class="data-table" style="margin-bottom:8px" id="docsTable">
                 <thead>
@@ -212,9 +212,11 @@ async function saveDriver() {
         documents:       collectDocs(),
     };
 
-    if (!payload.full_name) { Starget.toast('Введите ФИО', 'error'); return; }
-    if (!payload.iin)       { Starget.toast('Введите ИИН', 'error'); return; }
-    if (!payload.phone)     { Starget.toast('Введите телефон', 'error'); return; }
+    if (!payload.full_name)         { Starget.toast('Введите ФИО', 'error'); return; }
+    if (!payload.iin)                { Starget.toast('Введите ИИН', 'error'); return; }
+    if (!payload.phone)              { Starget.toast('Введите телефон', 'error'); return; }
+    if (!payload.license_classes)    { Starget.toast('Выберите хотя бы одну категорию прав', 'error'); return; }
+    if (!payload.documents.length)   { Starget.toast('Добавьте хотя бы один документ', 'error'); return; }
 
     const res = await Starget.api('POST', '/drivers', payload);
     if (res && res.success) {

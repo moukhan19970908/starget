@@ -8,12 +8,7 @@
 </div>
 @endsection
 
-@section('header_actions')
-<a href="/transportations/create" class="btn btn-primary">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>
-    Создать перевозку
-</a>
-@endsection
+
 
 @section('content')
 <div class="split-layout">

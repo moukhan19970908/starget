@@ -20,11 +20,14 @@ class StoreVehicleRequest extends FormRequest
             'volume'          => ['required', 'numeric', 'min:0'],
             'tractor_brand'   => ['required', 'string', 'max:100'],
             'tractor_plate'   => ['required', 'string', 'max:20'],
-            'trailer_brand'   => ['nullable', 'string', 'max:100'],
-            'trailer_plate'   => ['nullable', 'string', 'max:20'],
+            'tractor_year'    => ['nullable', 'integer', 'min:1990', 'max:2030'],
+            'trailer_brand'   => ['required', 'string', 'max:100'],
+            'trailer_plate'   => ['required', 'string', 'max:20'],
+            'trailer_year'    => ['nullable', 'integer', 'min:1990', 'max:2030'],
             'temperature_min' => ['nullable', 'numeric'],
             'temperature_max' => ['nullable', 'numeric'],
             'driver_id'       => ['nullable', 'exists:drivers,id'],
+            'supplier_id'     => ['nullable', 'exists:suppliers,id'],
         ];
     }
 }

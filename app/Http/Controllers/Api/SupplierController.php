@@ -24,23 +24,23 @@ class SupplierController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        $total         = Supplier::count();
-        $activeCount   = Supplier::where('status', 'active')->count();
-        $legalPercent  = $total > 0 ? round(Supplier::where('type', 'legal')->count() / $total * 100) : 0;
-        $pendingCount  = Supplier::where('status', 'pending')->count();
+        $total        = Supplier::count();
+        $activeTrans  = \App\Models\Transportation::where('status', 'in_progress')->count();
+        $legalCount   = Supplier::where('type', 'legal')->count();
 
         return response()->json([
             'success' => true,
             'data'    => SupplierListResource::collection($suppliers->items()),
+            'stats'   => [
+                'total'        => $total,
+                'active_trans' => $activeTrans,
+                'legal'        => $legalCount,
+            ],
             'meta'    => [
-                'current_page'   => $suppliers->currentPage(),
-                'last_page'      => $suppliers->lastPage(),
-                'per_page'       => $suppliers->perPage(),
-                'total'          => $suppliers->total(),
-                'total_count'    => $total,
-                'active_count'   => $activeCount,
-                'legal_percent'  => $legalPercent,
-                'pending_count'  => $pendingCount,
+                'current_page' => $suppliers->currentPage(),
+                'last_page'    => $suppliers->lastPage(),
+                'per_page'     => $suppliers->perPage(),
+                'total'        => $suppliers->total(),
             ],
         ]);
     }

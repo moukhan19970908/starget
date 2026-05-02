@@ -9,7 +9,7 @@
 @endsection
 
 @section('header_actions')
-<a href="/suppliers/create" class="btn btn-primary">
+<a href="/suppliers/create" class="btn btn-primary" id="btnCreateSupplier">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>
     Создать поставщика
 </a>
@@ -17,7 +17,7 @@
 
 @section('content')
 
-<div class="ops-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+<div class="ops-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
     <div class="ops-card">
         <div class="ops-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0H5m14 0v-2H5v2"/></svg></div>
         <div class="ops-value" id="kpiTotal">—</div>
@@ -32,11 +32,6 @@
         <div class="ops-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"/></svg></div>
         <div class="ops-value" id="kpiLegal">—</div>
         <div class="ops-label">Юридических лиц</div>
-    </div>
-    <div class="ops-card">
-        <div class="ops-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg></div>
-        <div class="ops-value" id="kpiPending">—</div>
-        <div class="ops-label">На проверке</div>
     </div>
 </div>
 
@@ -219,6 +214,10 @@ function closeSupplierPanel() {
 document.addEventListener('DOMContentLoaded', function () {
     const panel = document.getElementById('supplierPanel');
     if (panel) panel.addEventListener('click', e => { if (e.target === panel) closeSupplierPanel(); });
+    if (!Starget.auth.can('suppliers.create')) {
+        const btn = document.getElementById('btnCreateSupplier');
+        if (btn) btn.style.display = 'none';
+    }
 });
 
 document.getElementById('statusTabs').addEventListener('click', e => {

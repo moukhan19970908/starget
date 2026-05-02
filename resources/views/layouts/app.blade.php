@@ -103,6 +103,16 @@
 </div>
 
 <script src="/js/starget.js"></script>
+<script>
+// Hide create buttons for client_manager role
+document.addEventListener('DOMContentLoaded', function () {
+    const me = Starget.auth.user();
+    if (me && me.role === 'client_manager') {
+        ['btnCreateClient','btnCreateContract','btnCreateSupplier','btnCreateVehicle','btnCreateDriver']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    }
+});
+</script>
 @stack('scripts')
 
 </body>

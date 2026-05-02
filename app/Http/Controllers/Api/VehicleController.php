@@ -82,7 +82,11 @@ class VehicleController extends Controller
 
     public function search(Request $request): JsonResponse
     {
-        $vehicles = $this->service->search($request->get('q', ''));
+        $vehicles = $this->service->search(
+            (string) $request->get('q', ''),
+            $request->integer('vehicle_type_id') ?: null,
+            $request->integer('supplier_id') ?: null,
+        );
 
         return response()->json([
             'success' => true,

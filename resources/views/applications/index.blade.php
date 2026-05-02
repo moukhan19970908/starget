@@ -147,23 +147,25 @@ async function loadApps(page) {
         return;
     }
 
+    const me = Starget.auth.user();
+    const isLogist = me && (me.role === 'logistic_manager' || me.role === 'admin');
+
     tbody.innerHTML = items.map(a => {
-        const route = [a.from_city?.name, a.to_city?.name].filter(Boolean).join(' → ') || '—';
-        const transport = a.active_transportation?.vehicle ?
-            `${a.active_transportation.vehicle.tractor_brand || ''} ${a.active_transportation.vehicle.tractor_plate || ''}`.trim() : '—';
+        const route = [a.route?.from, a.route?.to].filter(Boolean).join(' → ') || '—';
+        const transport = a.transport || '—';
         return `<tr onclick="location.href='/applications/${a.id}'" style="cursor:pointer">
             <td><span class="app-id">#${a.id}</span></td>
-            <td>${a.client?.company_name || a.client?.name || '—'}</td>
+            <td>${a.client?.name || '—'}</td>
             <td>${route}</td>
             <td>${Starget.fmt.status(a.status)}</td>
-            <td>${a.manager?.name || '—'}</td>
+            <td>${a.author?.full_name || '—'}</td>
             <td><span class="text-muted">${transport}</span></td>
-            <td>${Starget.fmt.money(a.total_cost, a.currency)}</td>
+            <td>${Starget.fmt.money(a.client_rate, a.client_rate_currency)}</td>
             <td>${Starget.fmt.date(a.created_at)}</td>
             <td>
                 <div class="row-actions">
                     <a href="/applications/${a.id}" class="action-link" onclick="event.stopPropagation()">Открыть</a>
-                    <a href="/transportations/create?application_id=${a.id}" class="action-link" onclick="event.stopPropagation()">Перевозка</a>
+                    ${isLogist ? `<a href="/transportations/create?application_id=${a.id}" class="action-link" onclick="event.stopPropagation()">Перевозка</a>` : ''}
                 </div>
             </td>
         </tr>`;

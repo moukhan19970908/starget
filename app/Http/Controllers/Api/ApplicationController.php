@@ -22,7 +22,7 @@ class ApplicationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $apps = Application::with(['client', 'departureCity', 'destinationCity', 'author', 'clientRateCurrency'])
+        $apps = Application::with(['client', 'departureCity', 'destinationCity', 'author', 'clientRateCurrency', 'transportations.vehicle'])
             ->when($request->search, fn($q) => $q->where('number', 'like', "%{$request->search}%"))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->when($request->client_id, fn($q) => $q->where('client_id', $request->client_id))

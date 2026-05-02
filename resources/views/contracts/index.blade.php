@@ -13,10 +13,12 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
     Экспорт
 </button>
-<button class="btn btn-primary" onclick="createContract()">
+@if(true)
+<button class="btn btn-primary" id="btnCreateContract" onclick="createContract()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>
     Создать договор
 </button>
+@endif
 @endsection
 
 @section('content')
@@ -129,16 +131,16 @@ async function loadContracts(page) {
 
     const now = new Date();
     tbody.innerHTML = items.map(c => {
-        const isExpiring = c.end_date && (new Date(c.end_date) - now) < 30 * 86400000 && c.status === 'active';
-        const endDateHtml = c.end_date
-            ? `<span style="color:${isExpiring ? 'var(--danger)' : 'inherit'}">${Starget.fmt.date(c.end_date)}${isExpiring ? ' ⚠' : ''}</span>`
+        const isExpiring = c.expires_at && (new Date(c.expires_at) - now) < 30 * 86400000 && c.status === 'active';
+        const endDateHtml = c.expires_at
+            ? `<span style="color:${isExpiring ? 'var(--danger)' : 'inherit'}">${Starget.fmt.date(c.expires_at)}${isExpiring ? ' ⚠' : ''}</span>`
             : '—';
         const party = c.client?.company_name || c.client?.name || c.supplier?.company_name || c.supplier?.name || '—';
         return `<tr>
             <td><strong>${c.number || '—'}</strong></td>
             <td>${party}</td>
             <td>${c.type === 'client' ? '<span class="badge badge-primary">Клиентский</span>' : '<span class="badge badge-secondary">Поставщик</span>'}</td>
-            <td>${Starget.fmt.date(c.start_date) || '—'}</td>
+            <td>${Starget.fmt.date(c.signed_date) || '—'}</td>
             <td>${endDateHtml}</td>
             <td>${Starget.fmt.status(c.status)}</td>
             <td>
@@ -155,7 +157,7 @@ async function loadContracts(page) {
 }
 
 function viewContract(id) {
-    Starget.toast('Просмотр договора — в разработке', 'info');
+    location.href = `/contracts/${id}`;
 }
 
 // ── CREATE CONTRACT MODAL ─────────────────────────────────────
@@ -199,27 +201,30 @@ async function submitCreateContract() {
     const number = document.getElementById('cc_number').value.trim();
     const type   = document.getElementById('cc_type').value;
 
-    if (!number) { Starget.toast('Введите номер договора', 'error'); return; }
-    if (!type)   { Starget.toast('Выберите тип договора', 'error'); return; }
+    const signedDate = document.getElementById('cc_signed_date').value;
+    const expiresAt  = document.getElementById('cc_expires_at').value;
+    const status     = document.getElementById('cc_status').value;
+    const fileInput  = document.getElementById('cc_file');
+
+    if (!number)              { Starget.toast('Введите номер договора', 'error'); return; }
+    if (!type)                { Starget.toast('Выберите тип договора', 'error'); return; }
+    if (!signedDate)          { Starget.toast('Укажите дату подписания', 'error'); return; }
+    if (!expiresAt)           { Starget.toast('Укажите дату истечения', 'error'); return; }
+    if (!status)              { Starget.toast('Выберите статус', 'error'); return; }
+    if (!fileInput.files[0])  { Starget.toast('Прикрепите файл договора', 'error'); return; }
 
     const fd = new FormData();
-    fd.append('number', number);
-    fd.append('type',   type);
+    fd.append('number',      number);
+    fd.append('type',        type);
+    fd.append('signed_date', signedDate);
+    fd.append('expires_at',  expiresAt);
+    fd.append('status',      status);
+    fd.append('file',        fileInput.files[0]);
 
     const clientId   = document.getElementById('cc_client_id').value;
     const supplierId = document.getElementById('cc_supplier_id').value;
     if (type === 'client'   && clientId)   fd.append('client_id',   clientId);
     if (type === 'supplier' && supplierId) fd.append('supplier_id', supplierId);
-
-    const signedDate = document.getElementById('cc_signed_date').value;
-    const expiresAt  = document.getElementById('cc_expires_at').value;
-    const status     = document.getElementById('cc_status').value;
-    if (signedDate) fd.append('signed_date', signedDate);
-    if (expiresAt)  fd.append('expires_at',  expiresAt);
-    if (status)     fd.append('status',      status);
-
-    const fileInput = document.getElementById('cc_file');
-    if (fileInput.files[0]) fd.append('file', fileInput.files[0]);
 
     const btn = document.getElementById('cc_submitBtn');
     btn.disabled = true;
@@ -240,6 +245,10 @@ async function submitCreateContract() {
 document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('createContractModal');
     if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeCreateContractModal(); });
+    if (!Starget.auth.can('contracts.create')) {
+        const btn = document.getElementById('btnCreateContract');
+        if (btn) btn.style.display = 'none';
+    }
 });
 
 function exportContracts() {
@@ -303,22 +312,22 @@ loadContracts();
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Дата подписания</label>
+                    <label class="form-label">Дата подписания <span style="color:var(--danger)">*</span></label>
                     <input type="date" class="form-input" id="cc_signed_date">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Дата истечения</label>
+                    <label class="form-label">Дата истечения <span style="color:var(--danger)">*</span></label>
                     <input type="date" class="form-input" id="cc_expires_at">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Статус</label>
+                    <label class="form-label">Статус <span style="color:var(--danger)">*</span></label>
                     <select class="form-select" id="cc_status">
                         <option value="active">Активен</option>
                         <option value="draft">Черновик</option>
                     </select>
                 </div>
                 <div class="form-group full">
-                    <label class="form-label">Файл договора (PDF, DOC, DOCX)</label>
+                    <label class="form-label">Файл договора (PDF, DOC, DOCX) <span style="color:var(--danger)">*</span></label>
                     <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
                         <span class="btn btn-outline" style="font-size:12px;padding:7px 14px;white-space:nowrap" onclick="document.getElementById('cc_file').click()">Выбрать файл</span>
                         <span id="cc_fileNameLabel" style="font-size:12px;color:var(--text-muted)">Файл не выбран</span>

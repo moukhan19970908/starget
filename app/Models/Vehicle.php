@@ -11,8 +11,8 @@ class Vehicle extends Model
 {
     protected $fillable = [
         'owner_id', 'vehicle_type_id', 'tonnage', 'volume',
-        'tractor_brand', 'tractor_plate',
-        'trailer_brand', 'trailer_plate',
+        'tractor_brand', 'tractor_plate', 'tractor_year',
+        'trailer_brand', 'trailer_plate', 'trailer_year',
         'temperature_min', 'temperature_max',
         'status',
     ];

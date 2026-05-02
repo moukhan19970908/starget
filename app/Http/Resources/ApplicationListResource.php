@@ -28,6 +28,11 @@ class ApplicationListResource extends JsonResource
             ],
             'client_rate'  => $this->client_rate,
             'client_rate_currency' => $this->clientRateCurrency?->code,
+            'transport'    => $this->whenLoaded('transportations', function () {
+                $first = $this->transportations->first();
+                if (!$first || !$first->vehicle) return null;
+                return trim("{$first->vehicle->tractor_brand} {$first->vehicle->tractor_plate}") ?: null;
+            }),
         ];
     }
 }

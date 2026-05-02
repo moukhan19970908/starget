@@ -9,7 +9,7 @@
 @endsection
 
 @section('header_actions')
-<a href="/vehicles/create" class="btn btn-primary">
+<a href="/vehicles/create" class="btn btn-primary" id="btnCreateVehicle">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>
     Добавить транспорт
 </a>
@@ -171,7 +171,7 @@ async function loadVehicles(page) {
 }
 
 function viewVehicle(id) {
-    Starget.toast('Просмотр транспорта — в разработке', 'info');
+    location.href = `/vehicles/${id}`;
 }
 
 document.getElementById('statusTabs').addEventListener('click', e => {

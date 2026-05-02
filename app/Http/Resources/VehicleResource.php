@@ -13,8 +13,10 @@ class VehicleResource extends JsonResource
             'id'              => $this->id,
             'tractor_brand'   => $this->tractor_brand,
             'tractor_plate'   => $this->tractor_plate,
+            'tractor_year'    => $this->tractor_year,
             'trailer_brand'   => $this->trailer_brand,
             'trailer_plate'   => $this->trailer_plate,
+            'trailer_year'    => $this->trailer_year,
             'vehicle_type'    => [
                 'id'     => $this->vehicleType?->id,
                 'name'   => $this->vehicleType?->name,
@@ -35,6 +37,12 @@ class VehicleResource extends JsonResource
                     'id'        => $d->id,
                     'full_name' => $d->full_name,
                     'iin'       => $d->iin,
+                ])
+            ),
+            'suppliers'       => $this->whenLoaded('suppliers', fn() =>
+                $this->suppliers->map(fn($s) => [
+                    'id'   => $s->id,
+                    'name' => $s->name,
                 ])
             ),
         ];

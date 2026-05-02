@@ -35,10 +35,6 @@
             <div class="form-section-title">Основные данные</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">Организация (перевозчик)</label>
-                    <input type="text" class="form-input" id="org" placeholder="ТОО Starget Logistics">
-                </div>
-                <div class="form-group">
                     <label class="form-label">Клиентский менеджер</label>
                     <input type="text" class="form-input" id="clientManagerDisplay" readonly placeholder="Берётся из заявки...">
                     <input type="hidden" id="clientManagerId">
@@ -61,53 +57,6 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
-            </div>
-        </div>
-
-        {{-- ТРАНСПОРТ --}}
-        <div class="form-section">
-            <div class="form-section-title">Транспорт</div>
-            <div class="form-grid">
-                <div class="form-group form-group-full">
-                    <label class="form-label">Тип транспорта <span class="required">*</span></label>
-                    <select class="form-select" id="vehicleTypeId">
-                        <option value="">Выберите тип...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Тягач <span class="required">*</span></label>
-                    <div class="autocomplete-wrap">
-                        <input type="text" class="form-input" id="tractorSearch" placeholder="Поиск по номеру или марке..." oninput="searchVehicles()">
-                        <input type="hidden" id="vehicleId">
-                        <div class="autocomplete-dropdown" id="tractorDropdown"></div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Прицеп</label>
-                    <input type="text" class="form-input" id="trailerInfo" placeholder="Заполняется автоматически" readonly>
-                </div>
-            </div>
-        </div>
-
-        {{-- ВОДИТЕЛЬ --}}
-        <div class="form-section">
-            <div class="form-section-title">Водитель</div>
-            <div class="form-group">
-                <label class="form-label">Поиск по ИИН или ФИО</label>
-                <div class="autocomplete-wrap">
-                    <input type="text" class="form-input" id="driverSearch" placeholder="Введите ИИН или ФИО водителя..." oninput="searchDriver()" autocomplete="off">
-                    <div class="autocomplete-dropdown" id="driverDropdown"></div>
-                </div>
-            </div>
-            <div class="driver-found-card" id="driverFound" style="display:none">
-                <div class="driver-avatar-sm" id="driverAvatar"></div>
-                <div class="driver-info">
-                    <div class="driver-found-name" id="driverName">—</div>
-                    <div class="driver-found-iin" id="driverIinDisplay">—</div>
-                    <div id="driverDocStatus"></div>
-                </div>
-                <input type="hidden" id="driverId">
-                <button type="button" class="btn-icon-sm" onclick="clearDriver()">✕</button>
             </div>
         </div>
 
@@ -143,6 +92,59 @@
                 </div>
             </div>
         </div>
+
+        {{-- ТРАНСПОРТ --}}
+        <div class="form-section">
+            <div class="form-section-title">Транспорт</div>
+            <div class="form-grid">
+                <div class="form-group form-group-full">
+                    <label class="form-label">Тип транспорта <span class="required">*</span></label>
+                    <select class="form-select" id="vehicleTypeId" onchange="onVehicleTypeChange()">
+                        <option value="">Выберите тип...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Тягач <span class="required">*</span></label>
+                    <div class="autocomplete-wrap">
+                        <input type="text" class="form-input" id="tractorSearch" placeholder="Сначала выберите тип транспорта..." oninput="filterVehicles()" autocomplete="off" disabled>
+                        <input type="hidden" id="vehicleId">
+                        <div class="autocomplete-dropdown" id="tractorDropdown"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Прицеп</label>
+                    <input type="text" class="form-input" id="trailerInfo" placeholder="Заполняется автоматически" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Владелец</label>
+                    <input type="text" class="form-input" id="ownerDisplay" placeholder="Заполняется автоматически" readonly>
+                    <input type="hidden" id="ownerId">
+                </div>
+            </div>
+        </div>
+
+        {{-- ВОДИТЕЛЬ --}}
+        <div class="form-section">
+            <div class="form-section-title">Водитель</div>
+            <div class="form-group">
+                <label class="form-label">Поиск по ИИН или ФИО</label>
+                <div class="autocomplete-wrap">
+                    <input type="text" class="form-input" id="driverSearch" placeholder="Введите ИИН или ФИО водителя..." oninput="searchDriver()" autocomplete="off">
+                    <div class="autocomplete-dropdown" id="driverDropdown"></div>
+                </div>
+            </div>
+            <div class="driver-found-card" id="driverFound" style="display:none">
+                <div class="driver-avatar-sm" id="driverAvatar"></div>
+                <div class="driver-info">
+                    <div class="driver-found-name" id="driverName">—</div>
+                    <div class="driver-found-iin" id="driverIinDisplay">—</div>
+                    <div id="driverDocStatus"></div>
+                </div>
+                <input type="hidden" id="driverId">
+                <button type="button" class="btn-icon-sm" onclick="clearDriver()">✕</button>
+            </div>
+        </div>
+
     </div>
 
     {{-- RIGHT: DOCS + INFO --}}
@@ -237,27 +239,77 @@ async function loadApplicationInfo() {
     }
 }
 
-function searchVehicles() {
-    clearTimeout(vehicleSearchTimer);
-    vehicleSearchTimer = setTimeout(async () => {
-        const q = document.getElementById('tractorSearch').value;
-        if (q.length < 2) { document.getElementById('tractorDropdown').innerHTML = ''; return; }
-        const res = await Starget.api('GET', `/vehicles/search?q=${encodeURIComponent(q)}`);
-        const items = res?.data || [];
-        const dd = document.getElementById('tractorDropdown');
-        if (!items.length) { dd.innerHTML = '<div class="ac-item ac-empty">Ничего не найдено</div>'; return; }
-        dd.innerHTML = items.map(v => `<div class="ac-item" onclick="selectVehicle(${v.id}, '${v.tractor_brand} ${v.tractor_plate}', '${v.trailer_brand || ''} ${v.trailer_plate || ''}')">
-            <strong>${v.tractor_brand}</strong> <span class="plate">${v.tractor_plate}</span>
-            ${v.trailer_plate ? `<span style="color:var(--text-muted);font-size:11px;margin-left:4px">+ ${v.trailer_plate}</span>` : ''}
-        </div>`).join('');
-    }, 300);
+let allVehicles = [];
+
+function clearVehicle() {
+    document.getElementById('vehicleId').value = '';
+    document.getElementById('tractorSearch').value = '';
+    document.getElementById('tractorSearch').disabled = true;
+    document.getElementById('tractorSearch').placeholder = 'Сначала выберите тип транспорта...';
+    document.getElementById('trailerInfo').value = '';
+    document.getElementById('tractorDropdown').innerHTML = '';
+    document.getElementById('ownerId').value = '';
+    document.getElementById('ownerDisplay').value = '';
+    allVehicles = [];
+    clearDriver();
 }
 
-function selectVehicle(id, tractor, trailer) {
+async function onVehicleTypeChange() {
+    clearVehicle();
+    const typeId = document.getElementById('vehicleTypeId').value;
+    if (!typeId) return;
+    const supId = document.getElementById('supplierId').value;
+    let url = `/vehicles/search?q=`;
+    url += `&vehicle_type_id=${typeId}`;
+    if (supId) url += `&supplier_id=${supId}`;
+    const res = await Starget.api('GET', url);
+    allVehicles = res?.data || [];
+    const input = document.getElementById('tractorSearch');
+    input.disabled = false;
+    input.placeholder = 'Поиск по номеру или марке...';
+    renderVehicleDropdown(allVehicles);
+    input.focus();
+}
+
+function renderVehicleDropdown(items) {
+    const dd = document.getElementById('tractorDropdown');
+    if (!items.length) { dd.innerHTML = '<div class="ac-item ac-empty">Ничего не найдено</div>'; return; }
+    dd.innerHTML = items.map(v => {
+        const tractor = (v.tractor_brand + ' ' + v.tractor_plate).replace(/'/g, '');
+        const trailer = ((v.trailer_brand || '') + ' ' + (v.trailer_plate || '')).replace(/'/g, '');
+        const driver  = v.driver ? JSON.stringify(v.driver).replace(/"/g, '&quot;') : 'null';
+        const owner   = v.owner  ? JSON.stringify(v.owner).replace(/"/g, '&quot;')  : 'null';
+        return `<div class="ac-item" onclick="selectVehicle(${v.id}, '${tractor}', '${trailer}', ${driver}, ${owner})">
+            <strong>${v.tractor_brand}</strong> <span class="plate">${v.tractor_plate}</span>
+            ${v.trailer_plate ? `<span style="color:var(--text-muted);font-size:11px;margin-left:4px">+ ${v.trailer_plate}</span>` : ''}
+            ${v.driver ? `<span style="color:var(--text-muted);font-size:11px;margin-left:6px">· ${v.driver.full_name}</span>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function filterVehicles() {
+    clearTimeout(vehicleSearchTimer);
+    vehicleSearchTimer = setTimeout(() => {
+        const q = document.getElementById('tractorSearch').value.toLowerCase();
+        const filtered = allVehicles.filter(v =>
+            (v.tractor_plate || '').toLowerCase().includes(q) ||
+            (v.tractor_brand || '').toLowerCase().includes(q)
+        );
+        renderVehicleDropdown(filtered);
+    }, 150);
+}
+
+function selectVehicle(id, tractor, trailer, driver, owner) {
     document.getElementById('vehicleId').value = id;
     document.getElementById('tractorSearch').value = tractor;
     document.getElementById('trailerInfo').value = trailer.trim() || '—';
     document.getElementById('tractorDropdown').innerHTML = '';
+    if (driver) {
+        document.getElementById('driverSearch').value = driver.full_name || '';
+        fillDriver(driver);
+    }
+    document.getElementById('ownerId').value   = owner ? owner.id   : '';
+    document.getElementById('ownerDisplay').value = owner ? owner.full_name : '';
 }
 
 let driverSearchTimer;
@@ -312,6 +364,8 @@ function clearDriver() {
 }
 
 async function onSupplierChange() {
+    clearVehicle();
+    if (document.getElementById('vehicleTypeId').value) onVehicleTypeChange();
     const supId = document.getElementById('supplierId').value;
     const sel = document.getElementById('supplierContractId');
     sel.disabled = true;
@@ -348,7 +402,6 @@ async function submitTransportation() {
         supplier_currency:  document.getElementById('supplierCurrency').value,
         payment_delay:      document.getElementById('paymentDelay').value || null,
         vat_enabled:        document.getElementById('vatEnabled').checked,
-        organization:       document.getElementById('org').value,
     };
 
     if (!payload.supplier_id) { Starget.toast('Выберите поставщика', 'error'); return; }
@@ -362,5 +415,11 @@ async function submitTransportation() {
 }
 
 init();
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('#tractorSearch') && !e.target.closest('#tractorDropdown')) {
+        document.getElementById('tractorDropdown').innerHTML = '';
+    }
+});
 </script>
 @endpush

@@ -39,6 +39,20 @@
             </div>
         </div>
 
+        {{-- ПОСТАВЩИК --}}
+        <div class="form-section">
+            <div class="form-section-title">Поставщик</div>
+            <div class="form-group">
+                <label class="form-label">Назначить поставщика</label>
+                <select class="form-select" id="supplierId">
+                    <option value="">Выберите поставщика...</option>
+                </select>
+            </div>
+            <div style="margin-top:6px">
+                <a href="/suppliers/create" class="link-sm" target="_blank">+ Создать нового поставщика</a>
+            </div>
+        </div>
+
         {{-- ВОДИТЕЛЬ --}}
         <div class="form-section">
             <div class="form-section-title">Водитель</div>
@@ -119,15 +133,15 @@
             <div class="form-section-title">Прицеп</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">Марка/Модель</label>
+                    <label class="form-label">Марка/Модель <span class="required">*</span></label>
                     <input type="text" class="form-input" id="trailerBrand" placeholder="Schmitz, Krone...">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Год выпуска</label>
+                    <label class="form-label">Год выпуска <span class="required">*</span></label>
                     <input type="number" class="form-input" id="trailerYear" placeholder="2021" min="1990" max="2030">
                 </div>
                 <div class="form-group form-group-full">
-                    <label class="form-label">Государственный номер</label>
+                    <label class="form-label">Государственный номер <span class="required">*</span></label>
                     <div style="display:flex;gap:8px;align-items:center">
                         <input type="text" class="form-input" id="trailerPlate" placeholder="123 АВС 01" style="text-transform:uppercase">
                         <span class="plate-suffix">KZ</span>
@@ -144,18 +158,22 @@
 const REFRIGERATOR_KEYWORDS = ['рефрижератор', 'реф', 'refrigerator', 'холод'];
 
 async function init() {
-    const [vtypes, owners, drivers] = await Promise.all([
+    const [vtypes, owners, drivers, suppliers] = await Promise.all([
         Starget.loadVehicleTypes(),
         Starget.api('GET', '/owners?limit=200'),
-        Starget.api('GET', '/drivers?status=available&limit=200'),
+        Starget.api('GET', '/drivers?status=active&limit=200'),
+        Starget.api('GET', '/suppliers?limit=200'),
     ]);
 
     Starget.fillSelect('vehicleTypeId', vtypes, 'id', 'name', 'Выберите тип...');
     if (owners && owners.data) {
-        Starget.fillSelect('ownerId', owners.data, 'id', o => o.company_name || o.name, 'Выберите владельца...');
+        Starget.fillSelect('ownerId', owners.data, 'id', o => o.full_name, 'Выберите владельца...');
     }
     if (drivers && drivers.data) {
         Starget.fillSelect('driverId', drivers.data, 'id', d => d.full_name || d.name, 'Выберите водителя...');
+    }
+    if (suppliers && suppliers.data) {
+        Starget.fillSelect('supplierId', suppliers.data, 'id', s => s.name, 'Выберите поставщика...');
     }
 }
 
@@ -170,21 +188,24 @@ async function saveVehicle() {
     const payload = {
         owner_id:        document.getElementById('ownerId').value || null,
         driver_id:       document.getElementById('driverId').value || null,
+        supplier_id:     document.getElementById('supplierId').value || null,
         vehicle_type_id: document.getElementById('vehicleTypeId').value || null,
         tonnage:         document.getElementById('tonnage').value || null,
         volume:          document.getElementById('volume').value || null,
         tractor_brand:   document.getElementById('tractorBrand').value,
         tractor_plate:   document.getElementById('tractorPlate').value.toUpperCase(),
         tractor_year:    document.getElementById('tractorYear').value || null,
-        trailer_brand:   document.getElementById('trailerBrand').value || null,
-        trailer_plate:   document.getElementById('trailerPlate').value.toUpperCase() || null,
+        trailer_brand:   document.getElementById('trailerBrand').value,
+        trailer_plate:   document.getElementById('trailerPlate').value.toUpperCase(),
         trailer_year:    document.getElementById('trailerYear').value || null,
         temp_min:        document.getElementById('tempMin').value || null,
         temp_max:        document.getElementById('tempMax').value || null,
     };
 
-    if (!payload.tractor_brand) { Starget.toast('Введите марку тягача', 'error'); return; }
-    if (!payload.tractor_plate) { Starget.toast('Введите номер тягача', 'error'); return; }
+    if (!payload.tractor_brand)  { Starget.toast('Введите марку тягача', 'error'); return; }
+    if (!payload.tractor_plate)  { Starget.toast('Введите номер тягача', 'error'); return; }
+    if (!payload.trailer_brand)  { Starget.toast('Введите марку прицепа', 'error'); return; }
+    if (!payload.trailer_plate)  { Starget.toast('Введите номер прицепа', 'error'); return; }
 
     const res = await Starget.api('POST', '/vehicles', payload);
     if (res && res.success) {

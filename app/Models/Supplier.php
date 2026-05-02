@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Supplier extends Model
 {
     protected $fillable = [
-        'name', 'bin_iin', 'type',
+        'name', 'bin_iin', 'type', 'specialization',
         'contact_name', 'phone', 'email',
         'comment', 'status',
     ];

@@ -19,10 +19,10 @@ class StoreContractRequest extends FormRequest
             'client_id'   => ['nullable', 'exists:clients,id'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'type'        => ['required', 'string', 'max:100'],
-            'signed_date' => ['nullable', 'date'],
-            'expires_at'  => ['nullable', 'date'],
-            'status'      => ['in:active,draft,expiring,refused,completed'],
-            'file'        => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:20480'],
+            'signed_date' => ['required', 'date'],
+            'expires_at'  => ['required', 'date'],
+            'status'      => ['required', 'in:active,draft,expiring,refused,completed'],
+            'file'        => ['required', 'file', 'mimes:pdf,doc,docx', 'max:20480'],
         ];
     }
 }

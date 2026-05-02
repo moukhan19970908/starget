@@ -15,12 +15,12 @@ class StoreDriverRequest extends FormRequest
     {
         return [
             'full_name'               => ['required', 'string', 'max:255'],
-            'iin'                     => ['nullable', 'string', 'max:20'],
+            'iin'                     => ['required', 'string', 'max:20'],
             'type'                    => ['required', 'in:individual,legal'],
-            'phone'                   => ['nullable', 'string', 'max:30'],
-            'license_classes'         => ['nullable', 'string', 'max:50'],
+            'phone'                   => ['required', 'string', 'max:30'],
+            'license_classes'         => ['required', 'string', 'max:50'],
             'is_owner'                => ['boolean'],
-            'documents'               => ['nullable', 'array'],
+            'documents'               => ['required', 'array', 'min:1'],
             'documents.*.document_type_id' => ['required', 'exists:document_types,id'],
             'documents.*.number'      => ['required', 'string'],
             'documents.*.issued_date' => ['required', 'date'],

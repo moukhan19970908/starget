@@ -50,19 +50,19 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Грузоотправитель</label>
+                    <label class="form-label">Грузоотправитель <span class="required">*</span></label>
                     <input type="text" class="form-input" id="shipperName" placeholder="Название компании">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Грузополучатель</label>
+                    <label class="form-label">Грузополучатель <span class="required">*</span></label>
                     <input type="text" class="form-input" id="consigneeName" placeholder="Название компании">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Контакт отправителя</label>
+                    <label class="form-label">Контакт отправителя <span class="required">*</span></label>
                     <input type="text" class="form-input" id="shipperContact" placeholder="+7(000)000-00-00" maxlength="16">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Контакт получателя</label>
+                    <label class="form-label">Контакт получателя <span class="required">*</span></label>
                     <input type="text" class="form-input" id="consigneeContact" placeholder="+7(000)000-00-00" maxlength="16">
                 </div>
                 <div class="form-group">
@@ -70,15 +70,15 @@
                     <input type="date" class="form-input" id="loadingDate">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Дата выгрузки</label>
+                    <label class="form-label">Дата выгрузки <span class="required">*</span></label>
                     <input type="date" class="form-input" id="unloadingDate">
                 </div>
                 <div class="form-group form-group-full">
-                    <label class="form-label">Полный адрес загрузки</label>
+                    <label class="form-label">Полный адрес загрузки <span class="required">*</span></label>
                     <input type="text" class="form-input" id="loadingAddress" placeholder="ул. Примерная, д. 1">
                 </div>
                 <div class="form-group form-group-full">
-                    <label class="form-label">Полный адрес выгрузки</label>
+                    <label class="form-label">Полный адрес выгрузки <span class="required">*</span></label>
                     <input type="text" class="form-input" id="unloadingAddress" placeholder="ул. Примерная, д. 1">
                 </div>
             </div>
@@ -93,21 +93,21 @@
                     <input type="text" class="form-input" id="cargoName" placeholder="Металлопрокат, зерно...">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Тип загрузки</label>
+                    <label class="form-label">Тип загрузки <span class="required">*</span></label>
                     <select class="form-select" id="loadingTypeId">
                         <option value="">Выберите тип...</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Вес груза (кг)</label>
+                    <label class="form-label">Вес груза (кг) <span class="required">*</span></label>
                     <input type="number" class="form-input" id="cargoWeight" placeholder="20000" min="0">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Объём груза (м³)</label>
+                    <label class="form-label">Объём груза (м³) <span class="required">*</span></label>
                     <input type="number" class="form-input" id="cargoVolume" placeholder="82" min="0">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Стоимость груза</label>
+                    <label class="form-label">Стоимость груза <span class="required">*</span></label>
                     <input type="number" class="form-input" id="cargoValue" placeholder="0" min="0">
                 </div>
                 <div class="form-group form-group-full">
@@ -143,11 +143,7 @@
                 <label class="form-label">Ставка клиента <span class="required">*</span></label>
                 <div class="input-group">
                     <input type="number" class="form-input" id="clientRate" placeholder="0" oninput="recalc()" min="0">
-                    <select class="form-select input-group-append" id="currency" onchange="recalc()">
-                        <option value="KZT">₸</option>
-                        <option value="USD">$</option>
-                        <option value="RUB">₽</option>
-                    </select>
+                    <select class="form-select input-group-append" id="currency" onchange="recalc()"></select>
                 </div>
             </div>
 
@@ -210,6 +206,10 @@ async function init() {
 
     if (currenciesData && currenciesData.data) {
         Starget.fillSelect('currency', currenciesData.data, 'id', 'code', '');
+        // Auto-select KZT by default
+        const kzt = currenciesData.data.find(c => c.code === 'KZT');
+        if (kzt) document.getElementById('currency').value = kzt.id;
+        recalc();
     }
 
     // Clients
@@ -252,10 +252,11 @@ function addStop() {
 function recalc() {
     const rate  = parseFloat(document.getElementById('clientRate').value) || 0;
     const exch  = parseFloat(document.getElementById('exchangeRate').value) || 1;
-    const curr  = document.getElementById('currency').value;
+    const currSel = document.getElementById('currency');
+    const currCode = currSel.options[currSel.selectedIndex]?.text || '';
     const vat   = document.getElementById('vatEnabled').checked;
 
-    const inKzt = curr === 'KZT' ? rate : rate * exch;
+    const inKzt = currCode === 'KZT' ? rate : rate * exch;
     const vatAmt = vat ? inKzt * 0.12 : 0;
     const total  = inKzt + vatAmt;
 
@@ -313,10 +314,24 @@ async function doSubmit(status) {
         stops:                    collectStops(),
     };
 
-    if (!payload.client_id) { Starget.toast('Выберите клиента', 'error'); return; }
-    if (!payload.departure_city_id) { Starget.toast('Укажите город отправки', 'error'); return; }
-    if (!payload.destination_city_id) { Starget.toast('Укажите город назначения', 'error'); return; }
-    if (!payload.cargo_name) { Starget.toast('Укажите наименование груза', 'error'); return; }
+    if (!payload.client_id)              { Starget.toast('Выберите клиента', 'error'); return; }
+    if (!payload.contract_id)             { Starget.toast('Выберите контракт', 'error'); return; }
+    if (!payload.departure_city_id)       { Starget.toast('Укажите город отправки', 'error'); return; }
+    if (!payload.destination_city_id)     { Starget.toast('Укажите город назначения', 'error'); return; }
+    if (!payload.shipper)                 { Starget.toast('Укажите грузоотправителя', 'error'); return; }
+    if (!payload.consignee)               { Starget.toast('Укажите грузополучателя', 'error'); return; }
+    if (!payload.contact_loading)         { Starget.toast('Укажите контакт отправителя', 'error'); return; }
+    if (!payload.contact_unloading)       { Starget.toast('Укажите контакт получателя', 'error'); return; }
+    if (!payload.departure_date)          { Starget.toast('Укажите дату загрузки', 'error'); return; }
+    if (!payload.arrival_date)            { Starget.toast('Укажите дату выгрузки', 'error'); return; }
+    if (!payload.loading_address)         { Starget.toast('Укажите адрес загрузки', 'error'); return; }
+    if (!payload.unloading_address)       { Starget.toast('Укажите адрес выгрузки', 'error'); return; }
+    if (!payload.cargo_name)              { Starget.toast('Укажите наименование груза', 'error'); return; }
+    if (!payload.loading_type_id)         { Starget.toast('Выберите тип загрузки', 'error'); return; }
+    if (!payload.weight)                  { Starget.toast('Укажите вес груза', 'error'); return; }
+    if (!payload.volume)                  { Starget.toast('Укажите объём груза', 'error'); return; }
+    if (!payload.cargo_cost)              { Starget.toast('Укажите стоимость груза', 'error'); return; }
+    if (!payload.client_rate)             { Starget.toast('Укажите ставку клиента', 'error'); return; }
 
     const res = await Starget.api('POST', '/applications', payload);
     if (res && res.success) {

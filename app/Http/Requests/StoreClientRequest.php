@@ -15,10 +15,10 @@ class StoreClientRequest extends FormRequest
     {
         return [
             'name'           => ['required', 'string', 'max:255'],
-            'bin_iin'        => ['nullable', 'string', 'max:20'],
+            'bin_iin'        => ['required', 'string', 'max:20'],
             'type'           => ['required', 'in:corporate,supplier,archive'],
-            'contact_name'   => ['nullable', 'string', 'max:255'],
-            'phone'          => ['nullable', 'string', 'max:30'],
+            'contact_name'   => ['required', 'string', 'max:255'],
+            'phone'          => ['required', 'string', 'max:30'],
             'email'          => ['nullable', 'email'],
             'legal_address'  => ['nullable', 'string'],
             'actual_address' => ['nullable', 'string'],

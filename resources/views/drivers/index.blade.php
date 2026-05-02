@@ -14,10 +14,12 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18M7 8h10M11 12h2"/></svg>
     Фильтры
 </button>
-<a href="/drivers/create" class="btn btn-primary">
+@if(true)
+<a href="/drivers/create" class="btn btn-primary" id="btnCreateDriver">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>
     Создать водителя
 </a>
+@endif
 @endsection
 
 @section('content')

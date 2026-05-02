@@ -9,7 +9,7 @@
 @endsection
 
 @section('header_actions')
-<button class="btn btn-primary" onclick="createClient()">
+<button class="btn btn-primary" id="btnCreateClient" onclick="createClient()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>
     Создать клиента
 </button>
@@ -129,9 +129,9 @@ async function loadClients(page) {
                     </div>
                 </div>
             </td>
-            <td class="text-mono">${c.bin || c.iin || '—'}</td>
+            <td class="text-mono">${c.bin_iin || '—'}</td>
             <td>
-                <div>${c.contact_person || '—'}</div>
+                <div>${c.contact_name || '—'}</div>
                 <div style="font-size:11px;color:var(--text-muted)">${c.phone || ''}</div>
             </td>
             <td><span class="badge badge-secondary">${contracts} договора</span></td>
@@ -165,7 +165,7 @@ async function loadPendingTasks() {
 }
 
 function viewClient(id) {
-    Starget.toast('Просмотр клиента — в разработке', 'info');
+    location.href = `/clients/${id}`;
 }
 
 // ── CREATE CLIENT MODAL ──────────────────────────────────────
@@ -182,15 +182,22 @@ async function submitCreateClient() {
     const name    = document.getElementById('cc_name').value.trim();
     const type    = document.getElementById('cc_type').value;
 
-    if (!name) { Starget.toast('Введите название компании', 'error'); return; }
-    if (!type) { Starget.toast('Выберите тип клиента', 'error'); return; }
+    const bin_iin      = document.getElementById('cc_bin_iin').value.trim();
+    const contact_name = document.getElementById('cc_contact_name').value.trim();
+    const phone        = document.getElementById('cc_phone').value.trim();
+
+    if (!name)         { Starget.toast('Введите название компании', 'error'); return; }
+    if (!type)         { Starget.toast('Выберите тип клиента', 'error'); return; }
+    if (!bin_iin)      { Starget.toast('Введите БИН / ИИН', 'error'); return; }
+    if (!contact_name) { Starget.toast('Введите контактное лицо', 'error'); return; }
+    if (!phone)        { Starget.toast('Введите телефон', 'error'); return; }
 
     const payload = {
         name:           name,
         type:           type,
-        bin_iin:        document.getElementById('cc_bin_iin').value.trim() || null,
-        contact_name:   document.getElementById('cc_contact_name').value.trim() || null,
-        phone:          document.getElementById('cc_phone').value.trim() || null,
+        bin_iin:        bin_iin,
+        contact_name:   contact_name,
+        phone:          phone,
         email:          document.getElementById('cc_email').value.trim() || null,
         legal_address:  document.getElementById('cc_legal_address').value.trim() || null,
         actual_address: document.getElementById('cc_actual_address').value.trim() || null,
@@ -220,6 +227,10 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.addEventListener('click', function (e) {
             if (e.target === modal) closeCreateClientModal();
         });
+    }
+    if (!Starget.auth.can('clients.create')) {
+        const btn = document.getElementById('btnCreateClient');
+        if (btn) btn.style.display = 'none';
     }
 });
 
@@ -258,15 +269,15 @@ loadPendingTasks();
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">БИН / ИИН</label>
+                    <label class="form-label">БИН / ИИН <span style="color:var(--danger)">*</span></label>
                     <input type="text" class="form-input" id="cc_bin_iin" placeholder="123456789012" maxlength="20">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Контактное лицо</label>
+                    <label class="form-label">Контактное лицо <span style="color:var(--danger)">*</span></label>
                     <input type="text" class="form-input" id="cc_contact_name" placeholder="Иванов Иван Иванович">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Телефон</label>
+                    <label class="form-label">Телефон <span style="color:var(--danger)">*</span></label>
                     <input type="tel" class="form-input" id="cc_phone" placeholder="+7 777 000 00 00">
                 </div>
                 <div class="form-group full">

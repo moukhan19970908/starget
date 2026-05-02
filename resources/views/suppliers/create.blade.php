@@ -38,7 +38,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Специализация</label>
+                    <label class="form-label">Специализация <span class="required">*</span></label>
                     <input type="text" class="form-input" id="specialization" placeholder="Грузоперевозки, рефрижераторы...">
                 </div>
             </div>
@@ -49,11 +49,11 @@
             <div class="form-section-title">Контактные данные</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">Контактное лицо</label>
+                    <label class="form-label">Контактное лицо <span class="required">*</span></label>
                     <input type="text" class="form-input" id="contactPerson" placeholder="Иванов Иван Иванович">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Телефон</label>
+                    <label class="form-label">Телефон <span class="required">*</span></label>
                     <input type="tel" class="form-input" id="phone" placeholder="+7 777 777 77 77" maxlength="16" oninput="formatKzPhone(this)" onkeydown="handleKzPhoneKey(event, this)">
                     <span class="form-hint" id="phoneHint" style="display:none;color:var(--danger)">Введите номер в формате +7 xxx xxx xx xx</span>
                 </div>
@@ -69,27 +69,13 @@
             </div>
         </div>
 
-        {{-- ТРАНСПОРТ --}}
-        <div class="form-section">
-            <div class="form-section-title">Транспортные средства</div>
-            <div id="vehiclesList">
-                <div class="empty-vehicles" style="color:var(--text-muted);font-size:13px;padding:12px 0">
-                    Транспорт не добавлен
-                </div>
-            </div>
-            <button class="btn btn-outline btn-sm" onclick="addVehicleRow()" style="margin-top:8px">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>
-                Добавить транспорт
-            </button>
-        </div>
-
         {{-- ДОКУМЕНТЫ --}}
         <div class="form-section">
             <div class="form-group">
                 <label class="form-label">Комментарий</label>
                 <textarea class="form-input" id="notes" rows="3" placeholder="Дополнительная информация..."></textarea>
             </div>
-            <div class="form-section-title">Документы и скан-копии</div>
+            <div class="form-section-title">Документы и скан-копии <span class="required">*</span></div>
             <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                 <div class="file-drop-text">Перетащите файлы или <span>нажмите для выбора</span></div>
@@ -136,31 +122,6 @@ function handleKzPhoneKey(e, input) {
     if (input.value.length >= 16 && !window.getSelection()?.toString()) return;
 }
 
-let vehicleCount = 0;
-
-function addVehicleRow() {
-    vehicleCount++;
-    const empty = document.querySelector('.empty-vehicles');
-    if (empty) empty.remove();
-    const row = document.createElement('div');
-    row.className = 'vehicle-row-form';
-    row.id = `vrow_${vehicleCount}`;
-    row.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
-        <div>
-            <label class="form-label">Марка/Тип тягача</label>
-            <input type="text" class="form-input" id="vbrand_${vehicleCount}" placeholder="Volvo FH">
-        </div>
-        <div>
-            <label class="form-label">Гос. номер</label>
-            <input type="text" class="form-input" id="vplate_${vehicleCount}" placeholder="123 АВС 02">
-        </div>
-        <div style="padding-bottom:1px">
-            <button type="button" class="btn-icon-sm red" onclick="document.getElementById('vrow_${vehicleCount}').remove()">✕</button>
-        </div>
-    </div>`;
-    document.getElementById('vehiclesList').appendChild(row);
-}
-
 function previewFiles() {
     const files = document.getElementById('fileInput').files;
     const preview = document.getElementById('filePreview');
@@ -172,23 +133,14 @@ function previewFiles() {
     ).join('');
 }
 
-function collectVehicles() {
-    const vehicles = [];
-    for (let i = 1; i <= vehicleCount; i++) {
-        const brand = document.getElementById(`vbrand_${i}`);
-        const plate = document.getElementById(`vplate_${i}`);
-        if (brand && plate && (brand.value || plate.value)) {
-            vehicles.push({ brand: brand.value, plate: plate.value });
-        }
-    }
-    return vehicles;
-}
-
 async function saveSupplier() {
-    const name  = document.getElementById('companyName').value.trim();
-    const bin   = document.getElementById('bin').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const email = document.getElementById('email').value.trim();
+    const name           = document.getElementById('companyName').value.trim();
+    const bin            = document.getElementById('bin').value.trim();
+    const specialization = document.getElementById('specialization').value.trim();
+    const contactPerson  = document.getElementById('contactPerson').value.trim();
+    const phone          = document.getElementById('phone').value.trim();
+    const email          = document.getElementById('email').value.trim();
+    const files          = document.getElementById('fileInput').files;
 
     if (!name) { Starget.toast('Введите название компании', 'error'); return; }
     if (!bin || !/^\d{12}$/.test(bin)) {
@@ -197,12 +149,16 @@ async function saveSupplier() {
         document.getElementById('bin').focus();
         return;
     }
-    if (phone && !/^\+7 \d{3} \d{3} \d{2} \d{2}$/.test(phone)) {
+    if (!specialization) { Starget.toast('Введите специализацию', 'error'); return; }
+    if (!contactPerson)  { Starget.toast('Введите контактное лицо', 'error'); return; }
+    if (!phone) { Starget.toast('Введите телефон', 'error'); return; }
+    if (!/^\+7 \d{3} \d{3} \d{2} \d{2}$/.test(phone)) {
         Starget.toast('Введите номер телефона в формате +7 xxx xxx xx xx', 'error');
         document.getElementById('phoneHint').style.display = '';
         document.getElementById('phone').focus();
         return;
     }
+    if (!files.length) { Starget.toast('Прикрепите хотя бы один документ', 'error'); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         Starget.toast('Введите корректный email-адрес', 'error');
         document.getElementById('emailHint').style.display = '';
@@ -211,22 +167,17 @@ async function saveSupplier() {
     }
 
     const fd = new FormData();
-    fd.append('name',         name);
-    fd.append('bin_iin',      bin);
-    fd.append('type',         document.getElementById('orgType').value);
-    fd.append('contact_name', document.getElementById('contactPerson').value.trim());
-    fd.append('phone',        phone);
-    fd.append('email',        email);
-    fd.append('comment',      document.getElementById('notes').value.trim());
-    fd.append('status',       'pending');
+    fd.append('name',           name);
+    fd.append('bin_iin',        bin);
+    fd.append('type',           document.getElementById('orgType').value);
+    fd.append('specialization', specialization);
+    fd.append('contact_name',   contactPerson);
+    fd.append('phone',          phone);
+    fd.append('email',          email);
+    fd.append('comment',        document.getElementById('notes').value.trim());
+    fd.append('status',         'pending');
 
-    const files = document.getElementById('fileInput').files;
     Array.from(files).forEach(f => fd.append('documents[]', f));
-
-    collectVehicles().forEach((v, i) => {
-        fd.append(`vehicles[${i}][tractor_brand]`, v.brand);
-        fd.append(`vehicles[${i}][tractor_plate]`, v.plate);
-    });
 
     const res = await Starget.api('POST', '/suppliers', fd, true);
     if (res && res.success) {

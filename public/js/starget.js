@@ -43,8 +43,10 @@ const Starget = {
           'transportations.view','vehicles.view','drivers.view','suppliers.view'],
         logistic_manager: ['dashboard.view','applications.view','transportations.view',
           'transportations.create','transportations.edit','transportations.complete',
-          'vehicles.view','vehicles.create','drivers.view','drivers.create',
-          'suppliers.view','suppliers.create','owners.create'],
+          'vehicles.view','vehicles.create','vehicles.edit',
+          'drivers.view','drivers.create','drivers.edit',
+          'owners.create','owners.edit',
+          'suppliers.view','clients.view','contracts.view'],
       };
       const perms = map[role];
       if (perms === '*') return true;
@@ -82,7 +84,17 @@ const Starget = {
         window.location.href = '/login';
         return null;
       }
-      return await res.json();
+      const json = await res.json();
+      if (!res.ok) {
+        if (json.errors) {
+          const first = Object.values(json.errors)[0];
+          this.toast(Array.isArray(first) ? first[0] : first, 'error');
+        } else if (json.message) {
+          this.toast(json.message, 'error');
+        }
+        return null;
+      }
+      return json;
     } catch (e) {
       this.toast('Ошибка соединения с сервером', 'error');
       return null;
