@@ -70,14 +70,13 @@
                 <th>Маршрут</th>
                 <th>Статус</th>
                 <th>Менеджер</th>
-                <th>Транспорт</th>
                 <th>Стоимость</th>
                 <th>Дата</th>
                 <th></th>
             </tr>
         </thead>
         <tbody id="appsTableBody">
-            <tr><td colspan="9" class="table-empty">Загрузка...</td></tr>
+            <tr><td colspan="8" class="table-empty">Загрузка...</td></tr>
         </tbody>
     </table>
 </div>
@@ -142,30 +141,28 @@ async function loadApps(page) {
     const items = res.data || [];
 
     if (!items.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="table-empty">Заявки не найдены</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="table-empty">Заявки не найдены</td></tr>';
         document.getElementById('appsPagination').innerHTML = '';
         return;
     }
 
     const me = Starget.auth.user();
-    const isLogist = me && (me.role === 'logistic_manager' || me.role === 'admin');
+    const canCreateTrans = me && Starget.auth.can('transportations.create');
 
     tbody.innerHTML = items.map(a => {
         const route = [a.route?.from, a.route?.to].filter(Boolean).join(' → ') || '—';
-        const transport = a.transport || '—';
         return `<tr onclick="location.href='/applications/${a.id}'" style="cursor:pointer">
             <td><span class="app-id">#${a.id}</span></td>
             <td>${a.client?.name || '—'}</td>
             <td>${route}</td>
             <td>${Starget.fmt.status(a.status)}</td>
             <td>${a.author?.full_name || '—'}</td>
-            <td><span class="text-muted">${transport}</span></td>
             <td>${Starget.fmt.money(a.client_rate, a.client_rate_currency)}</td>
             <td>${Starget.fmt.date(a.created_at)}</td>
             <td>
                 <div class="row-actions">
                     <a href="/applications/${a.id}" class="action-link" onclick="event.stopPropagation()">Открыть</a>
-                    ${isLogist ? `<a href="/transportations/create?application_id=${a.id}" class="action-link" onclick="event.stopPropagation()">Перевозка</a>` : ''}
+                    ${canCreateTrans ? `<a href="/transportations/create?application_id=${a.id}" class="action-link" onclick="event.stopPropagation()">Перевозка</a>` : ''}
                 </div>
             </td>
         </tr>`;
@@ -195,5 +192,9 @@ document.getElementById('statusTabs').addEventListener('click', e => {
 });
 
 loadApps();
+
+if (!Starget.auth.can('applications.create')) {
+    document.querySelectorAll('a[href="/applications/create"]').forEach(el => el.style.display = 'none');
+}
 </script>
 @endpush

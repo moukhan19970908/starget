@@ -234,8 +234,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+function formatPhone(input) {
+    let digits = input.value.replace(/\D/g, '');
+    if (digits.startsWith('8')) digits = '7' + digits.slice(1);
+    if (!digits.startsWith('7') && digits.length > 0) digits = '7' + digits;
+    digits = digits.slice(0, 11);
+    let result = '';
+    if (digits.length > 0)  result = '+7';
+    if (digits.length > 1)  result += ' ' + digits.slice(1, 4);
+    if (digits.length > 4)  result += ' ' + digits.slice(4, 7);
+    if (digits.length > 7)  result += ' ' + digits.slice(7, 9);
+    if (digits.length > 9)  result += ' ' + digits.slice(9, 11);
+    input.value = result;
+}
+
 loadClients();
-loadPendingTasks();
+if (Starget.auth.can('tasks.view')) {
+    loadPendingTasks();
+} else {
+    const tasksCard = document.querySelector('.side-tasks-card');
+    if (tasksCard) tasksCard.style.display = 'none';
+}
 </script>
 
 {{-- CREATE CLIENT MODAL --}}
@@ -278,7 +297,7 @@ loadPendingTasks();
                 </div>
                 <div class="form-group">
                     <label class="form-label">Телефон <span style="color:var(--danger)">*</span></label>
-                    <input type="tel" class="form-input" id="cc_phone" placeholder="+7 777 000 00 00">
+                    <input type="tel" class="form-input" id="cc_phone" placeholder="+7 747 777 74 74" oninput="formatPhone(this)" maxlength="16">
                 </div>
                 <div class="form-group full">
                     <label class="form-label">Email</label>

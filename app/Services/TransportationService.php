@@ -41,7 +41,7 @@ class TransportationService
                 'client_manager_id'  => $app->author_id,
                 'logistic_manager_id' => $logist->id,
                 'client_contract_id' => $app->contract_id,
-                'status'             => isset($data['status']) ? $data['status'] : 'open',
+                'status'             => isset($data['status']) ? $data['status'] : 'in_transit',
             ]));
 
             activity_log($logist, 'transportation_created', $transportation,

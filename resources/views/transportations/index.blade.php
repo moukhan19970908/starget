@@ -153,7 +153,7 @@ async function loadList() {
     }
 
     listEl.innerHTML = items.map(t => {
-        const route = [t.application?.from_city?.name, t.application?.to_city?.name].filter(Boolean).join(' → ') || '—';
+        const route = [t.route?.from, t.route?.to].filter(Boolean).join(' → ') || '—';
         const isSelected = t.id === selectedId;
         return `<div class="trans-card ${isSelected ? 'active' : ''}" onclick="selectTrans(${t.id})">
             <div class="trans-card-top">

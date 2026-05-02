@@ -229,6 +229,7 @@ async function onClientChange() {
     sel.disabled = false;
     if (res && res.data && res.data.length) {
         Starget.fillSelect('contractId', res.data, 'id', item => `${item.number} (до ${Starget.fmt.date(item.end_date)})`, 'Выберите контракт...');
+        if (res.data.length === 1) sel.value = res.data[0].id;
     } else {
         sel.innerHTML = '<option value="">Нет активных контрактов</option>';
     }

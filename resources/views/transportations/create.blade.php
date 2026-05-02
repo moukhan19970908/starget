@@ -231,6 +231,12 @@ async function loadApplicationInfo() {
 
     if (a.contract?.id) {
         document.getElementById('clientContractId').innerHTML = `<option value="${a.contract.id}">${a.contract.number || 'Контракт ' + a.contract.id}</option>`;
+    } else if (a.client?.id) {
+        const cr = await Starget.api('GET', `/contracts?client_id=${a.client.id}&status=active&limit=100`);
+        if (cr?.data?.length) {
+            Starget.fillSelect('clientContractId', cr.data, 'id', c => c.number || ('Контракт ' + c.id), 'Выберите контракт...');
+            if (cr.data.length === 1) document.getElementById('clientContractId').value = cr.data[0].id;
+        }
     }
 
     if (a.author) {
@@ -244,8 +250,6 @@ let allVehicles = [];
 function clearVehicle() {
     document.getElementById('vehicleId').value = '';
     document.getElementById('tractorSearch').value = '';
-    document.getElementById('tractorSearch').disabled = true;
-    document.getElementById('tractorSearch').placeholder = 'Сначала выберите тип транспорта...';
     document.getElementById('trailerInfo').value = '';
     document.getElementById('tractorDropdown').innerHTML = '';
     document.getElementById('ownerId').value = '';
@@ -257,16 +261,20 @@ function clearVehicle() {
 async function onVehicleTypeChange() {
     clearVehicle();
     const typeId = document.getElementById('vehicleTypeId').value;
-    if (!typeId) return;
+    const input = document.getElementById('tractorSearch');
+    if (!typeId) {
+        input.disabled = true;
+        input.placeholder = 'Сначала выберите тип транспорта...';
+        return;
+    }
+    input.disabled = false;
+    input.placeholder = 'Поиск по номеру или марке...';
     const supId = document.getElementById('supplierId').value;
     let url = `/vehicles/search?q=`;
     url += `&vehicle_type_id=${typeId}`;
     if (supId) url += `&supplier_id=${supId}`;
     const res = await Starget.api('GET', url);
     allVehicles = res?.data || [];
-    const input = document.getElementById('tractorSearch');
-    input.disabled = false;
-    input.placeholder = 'Поиск по номеру или марке...';
     renderVehicleDropdown(allVehicles);
     input.focus();
 }

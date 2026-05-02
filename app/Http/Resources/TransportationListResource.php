@@ -32,6 +32,7 @@ class TransportationListResource extends JsonResource
             ]),
             'supplier_rate'          => $this->supplier_rate,
             'supplier_rate_currency' => $this->supplier_rate_currency,
+            'created_at'             => $this->created_at?->toDateTimeString(),
         ];
     }
 }

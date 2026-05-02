@@ -86,7 +86,7 @@ class ApplicationService
     public function canAddTransportation(Application $app): bool
     {
         if ($app->planned_transportations_count === 0) {
-            return false;
+            return true; // 0 = без ограничений
         }
         $created = $app->transportations()->count();
         return $created < $app->planned_transportations_count;

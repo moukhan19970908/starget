@@ -46,7 +46,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Телефон <span class="required">*</span></label>
-                    <input type="tel" class="form-input" id="phone" placeholder="+7 (777) 000-00-00">
+                    <input type="tel" class="form-input" id="phone" placeholder="+7 747 777 74 74" oninput="formatDriverPhone(this)" maxlength="16">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Категории прав <span class="required">*</span></label>
@@ -86,7 +86,7 @@
             </button>
 
             <div style="margin-top:16px">
-                <label class="form-label">Скан-копии документов</label>
+                <label class="form-label">Скан-копии документов <span class="required">*</span></label>
                 <div class="file-drop" onclick="document.getElementById('docFiles').click()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                     <div class="file-drop-text">Перетащите или <span>нажмите для выбора</span></div>
@@ -217,12 +217,28 @@ async function saveDriver() {
     if (!payload.phone)              { Starget.toast('Введите телефон', 'error'); return; }
     if (!payload.license_classes)    { Starget.toast('Выберите хотя бы одну категорию прав', 'error'); return; }
     if (!payload.documents.length)   { Starget.toast('Добавьте хотя бы один документ', 'error'); return; }
+    const docFilesInput = document.getElementById('docFiles');
+    if (!docFilesInput.files || !docFilesInput.files.length) { Starget.toast('Загрузите скан-копии документов', 'error'); return; }
 
     const res = await Starget.api('POST', '/drivers', payload);
     if (res && res.success) {
         Starget.toast('Водитель создан', 'success');
         setTimeout(() => { location.href = '/drivers'; }, 800);
     }
+}
+
+function formatDriverPhone(input) {
+    let digits = input.value.replace(/\D/g, '');
+    if (digits.startsWith('8')) digits = '7' + digits.slice(1);
+    if (!digits.startsWith('7') && digits.length > 0) digits = '7' + digits;
+    digits = digits.slice(0, 11);
+    let result = '';
+    if (digits.length > 0)  result = '+7';
+    if (digits.length > 1)  result += ' ' + digits.slice(1, 4);
+    if (digits.length > 4)  result += ' ' + digits.slice(4, 7);
+    if (digits.length > 7)  result += ' ' + digits.slice(7, 9);
+    if (digits.length > 9)  result += ' ' + digits.slice(9, 11);
+    input.value = result;
 }
 
 init();

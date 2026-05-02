@@ -217,7 +217,7 @@ async function loadApp() {
     document.getElementById('dUpdatedAt').textContent = Starget.fmt.datetime(a.updated_at);
 
     // Buttons
-    if (['new', 'in_progress'].includes(a.status)) {
+    if (['new', 'in_progress', 'open'].includes(a.status)) {
         document.getElementById('cancelBtn').style.display = '';
         document.getElementById('createTransBtn').style.display = '';
         document.getElementById('createTransBtn').href = `/transportations/create?application_id=${a.id}`;

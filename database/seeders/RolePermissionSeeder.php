@@ -62,7 +62,7 @@ class RolePermissionSeeder extends Seeder
             'suppliers.view', 'suppliers.create', 'suppliers.edit',
             'tasks.view', 'tasks.close',
             'applications.view',
-            'transportations.view',
+            'transportations.view', 'transportations.create',
             'vehicles.view', 'vehicles.create', 'vehicles.edit',
             'drivers.view', 'drivers.create', 'drivers.edit',
             'owners.create', 'owners.edit',
