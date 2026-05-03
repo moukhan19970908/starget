@@ -361,7 +361,8 @@ function fillDriver(d) {
     Starget.dom.set('driverName', d.full_name || '—');
     Starget.dom.set('driverIinDisplay', d.iin || '—');
     document.getElementById('driverDocStatus').innerHTML = Starget.fmt.docStatus(d.documents || []);
-    document.getElementById('driverDropdown')?.remove();
+    const dropdown = document.getElementById('driverDropdown');
+    if (dropdown) dropdown.innerHTML = '';
 }
 
 function clearDriver() {
@@ -409,7 +410,7 @@ async function submitTransportation() {
         supplier_rate:      document.getElementById('supplierRate').value || null,
         supplier_currency:  document.getElementById('supplierCurrency').value,
         payment_delay:      document.getElementById('paymentDelay').value || null,
-        vat_enabled:        document.getElementById('vatEnabled').checked,
+        vat_kz:             document.getElementById('vatEnabled').checked,
     };
 
     if (!payload.supplier_id) { Starget.toast('Выберите поставщика', 'error'); return; }

@@ -16,6 +16,8 @@ use PhpOffice\PhpWord\IOFactory;
 
 class TransportationService
 {
+    private const VAT_RATE = 0.12;
+
     private function generateNumber(): string
     {
         $year = Carbon::now()->year;
@@ -34,6 +36,10 @@ class TransportationService
         }
 
         return DB::transaction(function () use ($app, $data, $logist) {
+            if (!empty($data['vat_kz']) && isset($data['supplier_rate'])) {
+                $data['supplier_rate'] = round((float) $data['supplier_rate'] * (1 + self::VAT_RATE), 2);
+            }
+
             $transportation = Transportation::create(array_merge($data, [
                 'number'             => $this->generateNumber(),
                 'application_id'     => $app->id,

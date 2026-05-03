@@ -17,6 +17,7 @@ class DriverResource extends JsonResource
             'type'            => $this->type,
             'license_classes' => $this->license_classes ? explode(',', $this->license_classes) : [],
             'status'          => $this->status,
+            'is_owner'        => (bool) $this->is_owner,
             'created_at'      => $this->created_at?->toDateString(),
             'documents'       => $this->whenLoaded('documents', fn() =>
                 $this->documents->map(fn($d) => [

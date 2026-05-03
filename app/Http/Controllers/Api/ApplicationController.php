@@ -24,7 +24,14 @@ class ApplicationController extends Controller
     {
         $apps = Application::with(['client', 'departureCity', 'destinationCity', 'author', 'clientRateCurrency', 'transportations.vehicle'])
             ->when($request->search, fn($q) => $q->where('number', 'like', "%{$request->search}%"))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->status, function ($q) use ($request) {
+                if ($request->status === 'cancelled') {
+                    $q->whereIn('status', ['client_refusal', 'our_refusal', 'mutual_refusal']);
+                    return;
+                }
+
+                $q->where('status', $request->status);
+            })
             ->when($request->client_id, fn($q) => $q->where('client_id', $request->client_id))
             ->when($request->author_id, fn($q) => $q->where('author_id', $request->author_id))
             ->when($request->date_from, fn($q) => $q->whereDate('created_at', '>=', $request->date_from))

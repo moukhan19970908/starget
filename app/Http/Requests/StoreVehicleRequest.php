@@ -28,6 +28,8 @@ class StoreVehicleRequest extends FormRequest
             'temperature_max' => ['nullable', 'numeric'],
             'driver_id'       => ['nullable', 'exists:drivers,id'],
             'supplier_id'     => ['nullable', 'exists:suppliers,id'],
+            'documents'       => ['nullable', 'array'],
+            'documents.*'     => ['file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

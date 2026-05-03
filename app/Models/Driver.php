@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Driver extends Model
 {
     protected $fillable = [
-        'type', 'full_name', 'phone', 'iin', 'license_classes', 'status',
+        'type', 'full_name', 'phone', 'iin', 'license_classes', 'status', 'is_owner',
     ];
 
     public function documents(): HasMany

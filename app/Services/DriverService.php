@@ -17,8 +17,9 @@ class DriverService
             $documents = $data['documents'] ?? [];
             $files = $data['files'] ?? [];
 
-            unset($data['is_owner'], $data['documents'], $data['files']);
+            unset($data['documents'], $data['files']);
 
+            $data['is_owner'] = (bool) $isOwner;
             $driver = Driver::create($data);
 
             // Create owner record if driver is also owner

@@ -45,6 +45,13 @@ class VehicleResource extends JsonResource
                     'name' => $s->name,
                 ])
             ),
+            'documents'       => $this->whenLoaded('documents', fn() =>
+                $this->documents->map(fn($document) => [
+                    'id'            => $document->id,
+                    'file_path'     => $document->file_path,
+                    'original_name' => $document->original_name,
+                ])
+            ),
         ];
     }
 }

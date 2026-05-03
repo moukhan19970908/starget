@@ -54,14 +54,14 @@ class VehicleController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => new VehicleResource($vehicle->load(['owner', 'vehicleType', 'drivers'])),
+            'data'    => new VehicleResource($vehicle->load(['owner', 'vehicleType', 'drivers', 'documents'])),
             'message' => 'Транспорт добавлен.',
         ], 201);
     }
 
     public function show(Vehicle $vehicle): JsonResponse
     {
-        $vehicle->load(['owner.documents.documentType', 'vehicleType', 'drivers', 'suppliers']);
+        $vehicle->load(['owner.documents.documentType', 'vehicleType', 'drivers', 'suppliers', 'documents']);
 
         return response()->json([
             'success' => true,

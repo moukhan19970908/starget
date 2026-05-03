@@ -32,6 +32,7 @@ class DriverListResource extends JsonResource
                 'tractor_brand' => $currentVehicle->tractor_brand,
                 'tractor_plate' => $currentVehicle->tractor_plate,
             ] : null,
+            'is_owner'         => (bool) $this->is_owner,
         ];
     }
 }

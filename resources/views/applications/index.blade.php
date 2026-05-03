@@ -26,7 +26,7 @@
         <button class="tab active" data-status="">Все</button>
         <button class="tab" data-status="new">Новые</button>
         <button class="tab" data-status="in_progress">В работе</button>
-        <button class="tab" data-status="completed">Завершённые</button>
+        <button class="tab" data-status="closed">Завершённые</button>
         <button class="tab" data-status="cancelled">Отказано</button>
     </div>
     <div class="toolbar-right">
@@ -106,6 +106,16 @@ let currentPage = 1;
 let currentStatus = '';
 let debounce;
 
+async function closeApplication(id) {
+    if (!confirm('Завершить заявку?')) return;
+
+    const res = await Starget.api('PUT', `/applications/${id}/status`, { status: 'closed' });
+    if (!res || !res.success) return;
+
+    Starget.toast('Заявка завершена', 'success');
+    loadApps(currentPage);
+}
+
 function debounceLoad() {
     clearTimeout(debounce);
     debounce = setTimeout(loadApps, 350);
@@ -147,10 +157,11 @@ async function loadApps(page) {
     }
 
     const me = Starget.auth.user();
-    const canCreateTrans = me && Starget.auth.can('transportations.create');
+    const canChangeStatus = me && Starget.auth.can('applications.change_status');
 
     tbody.innerHTML = items.map(a => {
         const route = [a.route?.from, a.route?.to].filter(Boolean).join(' → ') || '—';
+        const canClose = canChangeStatus && ['open', 'in_transit'].includes(a.status);
         return `<tr onclick="location.href='/applications/${a.id}'" style="cursor:pointer">
             <td><span class="app-id">#${a.id}</span></td>
             <td>${a.client?.name || '—'}</td>
@@ -162,7 +173,7 @@ async function loadApps(page) {
             <td>
                 <div class="row-actions">
                     <a href="/applications/${a.id}" class="action-link" onclick="event.stopPropagation()">Открыть</a>
-                    ${canCreateTrans ? `<a href="/transportations/create?application_id=${a.id}" class="action-link" onclick="event.stopPropagation()">Перевозка</a>` : ''}
+                    ${canClose ? `<button type="button" class="action-link" onclick="event.stopPropagation(); closeApplication(${a.id})">Завершить заявку</button>` : ''}
                 </div>
             </td>
         </tr>`;

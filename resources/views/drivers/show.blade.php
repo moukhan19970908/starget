@@ -49,6 +49,10 @@
                     <div class="detail-label">Категории прав</div>
                     <div class="detail-value" id="dLicenses">—</div>
                 </div>
+                <div class="detail-item">
+                    <div class="detail-label">Роль</div>
+                    <div class="detail-value" id="dRole">—</div>
+                </div>
             </div>
         </div>
 
@@ -125,6 +129,10 @@ async function load() {
 
     document.getElementById('dStatus').innerHTML    = Starget.fmt.status(d.status || 'idle');
     document.getElementById('dCreatedAt').textContent = Starget.fmt.date(d.created_at);
+
+    const roles = ['<span class="badge badge-secondary" style="font-size:11px">Водитель</span>'];
+    if (d.is_owner) roles.push('<span class="badge" style="font-size:11px;background:#dcfce7;color:#15803d">Владелец</span>');
+    document.getElementById('dRole').innerHTML = roles.join(' ');
 
     // Documents
     const docs = d.documents || [];

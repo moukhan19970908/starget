@@ -2,13 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Driver;
-use App\Models\DriverDocument;
 use App\Models\Owner;
 use App\Models\Vehicle;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class VehicleService
 {
@@ -21,9 +18,10 @@ class VehicleService
                 $data['owner_id'] = $owner->id;
             }
 
-            $driverId   = $data['driver_id']   ?? null;
-            $supplierId = $data['supplier_id']  ?? null;
-            unset($data['new_owner'], $data['driver_id'], $data['supplier_id']);
+            $driverId   = $data['driver_id'] ?? null;
+            $supplierId = $data['supplier_id'] ?? null;
+            $documents  = $data['documents'] ?? [];
+            unset($data['new_owner'], $data['driver_id'], $data['supplier_id'], $data['documents']);
 
             $vehicle = Vehicle::create($data);
 
@@ -32,6 +30,16 @@ class VehicleService
             }
             if ($supplierId) {
                 $vehicle->suppliers()->attach($supplierId);
+            }
+            foreach ($documents as $document) {
+                if (! $document instanceof UploadedFile) {
+                    continue;
+                }
+
+                $vehicle->documents()->create([
+                    'file_path'     => $document->store('vehicle_docs', 'public'),
+                    'original_name' => $document->getClientOriginalName(),
+                ]);
             }
 
             return $vehicle;

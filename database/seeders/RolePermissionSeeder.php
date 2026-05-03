@@ -87,6 +87,7 @@ class RolePermissionSeeder extends Seeder
         $logisticManager->syncPermissions([
             'dashboard.view',
             'applications.view',
+            'applications.change_status',
             'transportations.view', 'transportations.create',
             'transportations.edit', 'transportations.complete',
             'vehicles.view', 'vehicles.create', 'vehicles.edit',

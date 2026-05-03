@@ -18,6 +18,7 @@ class DriverController extends Controller
     public function index(Request $request): JsonResponse
     {
         $drivers = Driver::with(['documents', 'vehicles'])
+            ->where('is_owner',0)
             ->when($request->search, fn($q) =>
                 $q->where('iin', 'like', "%{$request->search}%")
                   ->orWhere('full_name', 'like', "%{$request->search}%")

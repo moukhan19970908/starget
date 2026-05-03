@@ -18,7 +18,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-6 0h-4v-6h4v6z"/></svg>
     Печать
 </button>
-<button class="header-btn red" onclick="cancelApp()" id="cancelBtn" style="display:none">Отменить заявку</button>
+<button class="header-btn red" onclick="openCancelModal()" id="cancelBtn" style="display:none">Отменить заявку</button>
 <a href="#" class="btn btn-primary" id="createTransBtn" style="display:none">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>
     Создать перевозку
@@ -158,11 +158,107 @@
 </div>
 
 <div id="loadingState" style="padding:60px;text-align:center;color:var(--text-muted)">Загрузка...</div>
+
+<div id="cancelModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1200;padding:24px;overflow:auto">
+    <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(15,23,42,.18);padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+            <div>
+                <div class="page-title" style="font-size:20px">Отмена заявки</div>
+                <div class="page-subtitle">Выберите сторону отказа, причину из справочника и добавьте комментарий</div>
+            </div>
+            <button type="button" class="header-btn" onclick="closeCancelModal()">Закрыть</button>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group form-group-full">
+                <label class="form-label">Тип отмены <span class="required">*</span></label>
+                <select class="form-select" id="cancelType" onchange="renderRefusalReasons()">
+                    <option value="client">Отменена Клиентом</option>
+                    <option value="our_side">Отменена Starget</option>
+                    <option value="supplier">Отменена Поставщиком</option>
+                </select>
+            </div>
+            <div class="form-group form-group-full">
+                <label class="form-label">Причина отказа <span class="required">*</span></label>
+                <select class="form-select" id="cancelReasonId">
+                    <option value="">Выберите причину...</option>
+                </select>
+            </div>
+            <div class="form-group form-group-full">
+                <label class="form-label">Комментарий</label>
+                <textarea class="form-textarea" id="cancelComment" rows="4" placeholder="Опишите причину отказа"></textarea>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+            <button type="button" class="header-btn" onclick="closeCancelModal()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="submitCancellation()">Сохранить</button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
 const appId = location.pathname.split('/').pop();
+let refusalReasons = [];
+
+function closeCancelModal() {
+    document.getElementById('cancelModal').style.display = 'none';
+}
+
+function renderRefusalReasons() {
+    const selectedType = document.getElementById('cancelType').value;
+    const lookupType = selectedType === 'supplier' ? 'mutual' : selectedType;
+    const select = document.getElementById('cancelReasonId');
+    const filtered = refusalReasons.filter(reason => reason.type === lookupType);
+
+    select.innerHTML = '<option value="">Выберите причину...</option>' + filtered
+        .map(reason => `<option value="${reason.id}">${reason.name}</option>`)
+        .join('');
+}
+
+async function openCancelModal() {
+    if (!refusalReasons.length) {
+        const res = await Starget.api('GET', '/dict/refusal-reasons');
+        if (!res || !res.success) return;
+        refusalReasons = res.data || [];
+    }
+
+    document.getElementById('cancelType').value = 'client';
+    document.getElementById('cancelComment').value = '';
+    renderRefusalReasons();
+    document.getElementById('cancelModal').style.display = 'block';
+}
+
+async function submitCancellation() {
+    const type = document.getElementById('cancelType').value;
+    const refusalReasonId = document.getElementById('cancelReasonId').value;
+    const refusalComment = document.getElementById('cancelComment').value.trim();
+
+    if (!refusalReasonId) {
+        Starget.toast('Выберите причину отказа', 'error');
+        return;
+    }
+
+    const statusMap = {
+        client: 'client_refusal',
+        our_side: 'our_refusal',
+        supplier: 'mutual_refusal',
+    };
+
+    const res = await Starget.api('PUT', `/applications/${appId}/status`, {
+        status: statusMap[type],
+        refusal_reason_id: refusalReasonId,
+        refusal_comment: refusalComment || null,
+    });
+
+    if (res && res.success) {
+        closeCancelModal();
+        Starget.toast('Заявка отменена', 'success');
+        loadApp();
+    }
+}
 
 async function loadApp() {
     const res = await Starget.api('GET', `/applications/${appId}`);
@@ -218,9 +314,13 @@ async function loadApp() {
 
     // Buttons
     if (['new', 'in_progress', 'open'].includes(a.status)) {
-        document.getElementById('cancelBtn').style.display = '';
-        document.getElementById('createTransBtn').style.display = '';
-        document.getElementById('createTransBtn').href = `/transportations/create?application_id=${a.id}`;
+        if (Starget.auth.can('applications.change_status')) {
+            document.getElementById('cancelBtn').style.display = '';
+        }
+        if (Starget.auth.can('transportations.create')) {
+            document.getElementById('createTransBtn').style.display = '';
+            document.getElementById('createTransBtn').href = `/transportations/create?application_id=${a.id}`;
+        }
     }
 
     // Stops
@@ -245,15 +345,6 @@ async function loadApp() {
                 <a href="/transportations#${t.id}" class="action-link">Открыть</a>
             </div>`
         ).join('');
-    }
-}
-
-async function cancelApp() {
-    if (!confirm('Отменить заявку?')) return;
-    const res = await Starget.api('PUT', `/applications/${appId}`, { status: 'cancelled' });
-    if (res && res.success) {
-        Starget.toast('Заявка отменена', 'success');
-        loadApp();
     }
 }
 

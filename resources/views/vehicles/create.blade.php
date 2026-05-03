@@ -149,6 +149,20 @@
                 </div>
             </div>
         </div>
+
+        <div class="form-section">
+            <div class="form-section-title">Документы</div>
+            <div class="form-group">
+                <label class="form-label">Файлы на транспорт</label>
+                <div class="file-drop" id="vehicleDocsDrop" onclick="document.getElementById('vehicleDocs').click()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    <div class="file-drop-text">Перетащите или <span>нажмите для выбора</span></div>
+                    <div class="file-drop-hint">PDF, JPG, PNG, WEBP до 10 МБ</div>
+                    <input type="file" id="vehicleDocs" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" style="display:none" onchange="previewVehicleDocs()">
+                </div>
+                <div id="vehicleDocsPreview" style="margin-top:6px"></div>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
@@ -156,6 +170,20 @@
 @push('scripts')
 <script>
 const REFRIGERATOR_KEYWORDS = ['рефрижератор', 'реф', 'refrigerator', 'холод'];
+
+function previewVehicleDocs() {
+    const files = document.getElementById('vehicleDocs').files;
+    const preview = document.getElementById('vehicleDocsPreview');
+
+    if (!files.length) {
+        preview.innerHTML = '';
+        return;
+    }
+
+    preview.innerHTML = Array.from(files)
+        .map(file => `<div class="file-item">${file.name}</div>`)
+        .join('');
+}
 
 async function init() {
     const [vtypes, owners, drivers, suppliers] = await Promise.all([
@@ -186,20 +214,20 @@ function onTypeChange() {
 
 async function saveVehicle() {
     const payload = {
-        owner_id:        document.getElementById('ownerId').value || null,
-        driver_id:       document.getElementById('driverId').value || null,
-        supplier_id:     document.getElementById('supplierId').value || null,
-        vehicle_type_id: document.getElementById('vehicleTypeId').value || null,
-        tonnage:         document.getElementById('tonnage').value || null,
-        volume:          document.getElementById('volume').value || null,
-        tractor_brand:   document.getElementById('tractorBrand').value,
-        tractor_plate:   document.getElementById('tractorPlate').value.toUpperCase(),
-        tractor_year:    document.getElementById('tractorYear').value || null,
-        trailer_brand:   document.getElementById('trailerBrand').value,
-        trailer_plate:   document.getElementById('trailerPlate').value.toUpperCase(),
-        trailer_year:    document.getElementById('trailerYear').value || null,
-        temp_min:        document.getElementById('tempMin').value || null,
-        temp_max:        document.getElementById('tempMax').value || null,
+        owner_id:         document.getElementById('ownerId').value || null,
+        driver_id:        document.getElementById('driverId').value || null,
+        supplier_id:      document.getElementById('supplierId').value || null,
+        vehicle_type_id:  document.getElementById('vehicleTypeId').value || null,
+        tonnage:          document.getElementById('tonnage').value || null,
+        volume:           document.getElementById('volume').value || null,
+        tractor_brand:    document.getElementById('tractorBrand').value.trim(),
+        tractor_plate:    document.getElementById('tractorPlate').value.toUpperCase().trim(),
+        tractor_year:     document.getElementById('tractorYear').value || null,
+        trailer_brand:    document.getElementById('trailerBrand').value.trim(),
+        trailer_plate:    document.getElementById('trailerPlate').value.toUpperCase().trim(),
+        trailer_year:     document.getElementById('trailerYear').value || null,
+        temperature_min:  document.getElementById('tempMin').value || null,
+        temperature_max:  document.getElementById('tempMax').value || null,
     };
 
     if (!payload.tractor_brand)  { Starget.toast('Введите марку тягача', 'error'); return; }
@@ -207,12 +235,33 @@ async function saveVehicle() {
     if (!payload.trailer_brand)  { Starget.toast('Введите марку прицепа', 'error'); return; }
     if (!payload.trailer_plate)  { Starget.toast('Введите номер прицепа', 'error'); return; }
 
-    const res = await Starget.api('POST', '/vehicles', payload);
+    const fd = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+        if (value !== null && value !== '') fd.append(key, value);
+    });
+
+    Array.from(document.getElementById('vehicleDocs').files).forEach(file => {
+        fd.append('documents[]', file);
+    });
+
+    const res = await Starget.api('POST', '/vehicles', fd, true);
     if (res && res.success) {
         Starget.toast('Транспорт добавлен', 'success');
         setTimeout(() => { location.href = '/vehicles'; }, 800);
     }
 }
+
+const vehicleDocsDrop = document.getElementById('vehicleDocsDrop');
+vehicleDocsDrop.addEventListener('dragover', e => { e.preventDefault(); vehicleDocsDrop.classList.add('drag-over'); });
+vehicleDocsDrop.addEventListener('dragleave', () => vehicleDocsDrop.classList.remove('drag-over'));
+vehicleDocsDrop.addEventListener('drop', e => {
+    e.preventDefault();
+    vehicleDocsDrop.classList.remove('drag-over');
+    const dt = new DataTransfer();
+    Array.from(e.dataTransfer.files).forEach(file => dt.items.add(file));
+    document.getElementById('vehicleDocs').files = dt.files;
+    previewVehicleDocs();
+});
 
 init();
 </script>

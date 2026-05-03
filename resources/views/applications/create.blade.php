@@ -59,11 +59,11 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Контакт отправителя <span class="required">*</span></label>
-                    <input type="text" class="form-input" id="shipperContact" placeholder="+7(000)000-00-00" maxlength="16">
+                    <input type="text" class="form-input" oninput="formatKzPhone(this)" onkeydown="handleKzPhoneKey(event, this)" id="shipperContact" placeholder="+7 777 777 77 77" maxlength="16">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Контакт получателя <span class="required">*</span></label>
-                    <input type="text" class="form-input" id="consigneeContact" placeholder="+7(000)000-00-00" maxlength="16">
+                    <input type="text" class="form-input" oninput="formatKzPhone(this)" onkeydown="handleKzPhoneKey(event, this)" id="consigneeContact" placeholder="+7 777 777 77 77" maxlength="16">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Дата загрузки <span class="required">*</span></label>
@@ -341,38 +341,28 @@ async function doSubmit(status) {
     }
 }
 
-function applyPhoneMask(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('input', function (e) {
-        let digits = this.value.replace(/\D/g, '');
-        if (digits.startsWith('8')) digits = '7' + digits.slice(1);
-        if (!digits.startsWith('7')) digits = '7' + digits;
-        digits = digits.slice(0, 11);
-        let result = '+7';
-        if (digits.length > 1) result += '(' + digits.slice(1, 4);
-        if (digits.length >= 4) result += ')';
-        if (digits.length > 4)  result += digits.slice(4, 7);
-        if (digits.length > 7)  result += '-' + digits.slice(7, 9);
-        if (digits.length > 9)  result += '-' + digits.slice(9, 11);
-        this.value = result;
-    });
-    el.addEventListener('keydown', function (e) {
-        if (e.key === 'Backspace' && (this.value === '+7(' || this.value === '+7')) {
-            this.value = '';
-            e.preventDefault();
-        }
-    });
-    el.addEventListener('focus', function () {
-        if (!this.value) this.value = '+7(';
-    });
-    el.addEventListener('blur', function () {
-        if (this.value === '+7(') this.value = '';
-    });
+function formatKzPhone(input) {
+    let raw = input.value.replace(/\D/g, '');
+    // Ensure starts with 7
+    if (raw.startsWith('8')) raw = '7' + raw.slice(1);
+    if (!raw.startsWith('7')) raw = '7' + raw;
+    raw = raw.slice(0, 11);
+    let out = '+7';
+    if (raw.length > 1)  out += ' ' + raw.slice(1, 4);
+    if (raw.length > 4)  out += ' ' + raw.slice(4, 7);
+    if (raw.length > 7)  out += ' ' + raw.slice(7, 9);
+    if (raw.length > 9)  out += ' ' + raw.slice(9, 11);
+    input.value = out;
+    const hint = document.getElementById('phoneHint');
+    if (hint) hint.style.display = 'none';
 }
 
-applyPhoneMask('shipperContact');
-applyPhoneMask('consigneeContact');
+function handleKzPhoneKey(e, input) {
+    // Allow navigation, deletion, etc.
+    if (['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) return;
+    // Block if already at max length
+    if (input.value.length >= 16 && !window.getSelection()?.toString()) return;
+}
 init();
 recalc();
 </script>

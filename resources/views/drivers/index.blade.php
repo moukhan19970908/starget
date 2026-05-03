@@ -99,6 +99,7 @@
                 <th>Водитель</th>
                 <th>ИИН</th>
                 <th>Телефон</th>
+                <th>Роль</th>
                 <th>Документы</th>
                 <th>Транспорт</th>
                 <th>Статус</th>
@@ -106,7 +107,7 @@
             </tr>
         </thead>
         <tbody id="driversTable">
-            <tr><td colspan="7" class="table-empty">Загрузка...</td></tr>
+            <tr><td colspan="8" class="table-empty">Загрузка...</td></tr>
         </tbody>
     </table>
 </div>
@@ -166,7 +167,7 @@ async function loadDrivers(page) {
     const tbody = document.getElementById('driversTable');
     const items = res.data || [];
     if (!items.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Водители не найдены</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="table-empty">Водители не найдены</td></tr>';
         return;
     }
 
@@ -194,6 +195,9 @@ async function loadDrivers(page) {
                         <div style="font-size:10px;color:var(--text-muted)">${licenses.map(l => `<span class="badge badge-secondary" style="font-size:9px;padding:1px 4px">${l}</span>`).join(' ')}</div>
                     </div>
                 </div>
+            </td>
+            <td>
+                ${d.is_owner ? '<span class="badge" style="font-size:11px;background:#dcfce7;color:#15803d">Владелец</span>' : '<span class="badge badge-secondary" style="font-size:11px">Водитель</span>'}
             </td>
             <td class="text-mono">${d.iin || '—'}</td>
             <td>${d.phone || '—'}</td>

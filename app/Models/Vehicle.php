@@ -44,6 +44,11 @@ class Vehicle extends Model
         return $this->belongsToMany(Supplier::class, 'supplier_vehicles');
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(VehicleDocument::class);
+    }
+
     public function transportations(): HasMany
     {
         return $this->hasMany(Transportation::class);

@@ -2251,8 +2251,10 @@ table.data-table {
     border-right: 1px solid var(--border); padding: 16px; overflow-y: auto;
 }
 .split-header {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  /*display: flex; */
+    align-items: flex-start; justify-content: space-between; margin-bottom: 8px;
 }
+.split-header > div:first-child { margin-top: -2px; }
 .split-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--text-muted); }
 .split-count { margin-left: 6px; }
 .split-right { padding: 20px; overflow-y: auto; }
